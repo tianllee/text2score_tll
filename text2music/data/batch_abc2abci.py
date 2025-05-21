@@ -32,7 +32,7 @@ def main():
                         help='Root directory containing ABC files')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='Output directory for ABCI files (optional)')
-    parser.add_argument('--num_workers', type=int, default=4,
+    parser.add_argument('--num_workers', type=int, default=8,
                         help='Number of worker processes for parallel processing')
     
     args = parser.parse_args()
