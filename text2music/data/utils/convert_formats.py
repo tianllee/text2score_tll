@@ -55,10 +55,11 @@ def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = No
     # xml --> abc
     try:
         cmd = f'python utils/abc_helper/xml2abc.py -d 8 -x "{input_file}"'
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
-        result = p.communicate()
-        abc_output = result[0].decode('utf-8')
-        abc_lines = abc_output.splitlines()
+        # p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
+        # result = p.communicate()
+        # abc_output = result[0].decode('utf-8')
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
+        abc_lines = result.splitlines()
     except Exception as e:
         print(f'Error converting {input_file}: {e}')
         os.makedirs("logs", exist_ok=True)

@@ -1,6 +1,7 @@
 **/logs/
 .DS_Store
 __MACOSX
+.vscode
 
 # Python-related files
 __pycache__/
