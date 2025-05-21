@@ -8,6 +8,7 @@ from utils.convert_formats import convert_abc2abc_interleaved
 
 def process_file(abc_file, data_root=None, output_dir=None):
     """Process a single ABC file to ABC interleaved format."""
+    print(f"Processing {abc_file}")
     try:
         abci_file = abc_file.rsplit(".", 1)[0] + ".abci"
         if output_dir and data_root:

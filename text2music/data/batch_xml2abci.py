@@ -8,6 +8,7 @@ from utils.convert_formats import convert_xml2abc_interleaved
 
 def process_file(xml_file, data_root=None, output_dir=None):
     """Process a single XML file to ABC interleaved format."""
+    print(f"Processing {xml_file}")
     try:
         abci_file = xml_file.rsplit(".", 1)[0] + ".abci"
         if output_dir and data_root:
