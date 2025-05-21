@@ -6,15 +6,16 @@ from functools import partial
 from tqdm import tqdm
 from utils.convert_formats import convert_xml2abc_interleaved
 
-def process_file(xml_file, output_dir=None):
+def process_file(xml_file, data_root=None, output_dir=None):
     """Process a single XML file to ABC interleaved format."""
     try:
-        # If output_dir is specified, use it; otherwise, use the same directory as input
         abci_file = xml_file.replace(".musicxml", ".abci")
-        if output_dir:
-            filename = path.basename(abci_file)
-            abci_file = path.join(output_dir, filename)
-            
+        if output_dir and data_root:
+            # Get relative path from data_root to preserve subdirectory structure
+            rel_path = path.relpath(path.dirname(xml_file), data_root)
+            # Construct output path maintaining the subdirectory structure
+            abci_file = path.join(output_dir, rel_path, path.basename(abci_file))
+        
         abci_lines = convert_xml2abc_interleaved(xml_file, abci_file)
         if abci_lines is None:
             return False, xml_file
@@ -46,10 +47,10 @@ def main():
 
     # Process files using multiprocessing
     with Pool(processes=args.num_workers) as pool:
-        # Create partial function with output_dir
-        process_func = partial(process_file, output_dir=args.output_dir)
+        # Create partial function with data_root and output_dir
+        process_func = partial(process_file, data_root=args.data_root, output_dir=args.output_dir)
         
-        # Process files/with tqdm progress bar
+        # Process files with tqdm progress bar
         results = list(tqdm(pool.imap(process_func, xml_filelist), 
                            total=len(xml_filelist), 
                            desc="Converting MusicXML to ABCI"))
