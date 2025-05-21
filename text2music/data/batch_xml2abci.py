@@ -1,5 +1,5 @@
 import argparse
-from os import path
+from os import path, makedirs
 from glob import glob
 from multiprocessing import Pool
 from functools import partial
@@ -9,12 +9,14 @@ from utils.convert_formats import convert_xml2abc_interleaved
 def process_file(xml_file, data_root=None, output_dir=None):
     """Process a single XML file to ABC interleaved format."""
     try:
-        abci_file = xml_file.replace(".musicxml", ".abci")
+        abci_file = xml_file.rsplit(".", 1)[0] + ".abci"
         if output_dir and data_root:
             # Get relative path from data_root to preserve subdirectory structure
             rel_path = path.relpath(path.dirname(xml_file), data_root)
             # Construct output path maintaining the subdirectory structure
             abci_file = path.join(output_dir, rel_path, path.basename(abci_file))
+            # Ensure output directory exists
+            makedirs(path.dirname(abci_file), exist_ok=True)
         
         abci_lines = convert_xml2abc_interleaved(xml_file, abci_file)
         if abci_lines is None:
@@ -26,7 +28,7 @@ def process_file(xml_file, data_root=None, output_dir=None):
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Convert MusicXML files to ABC interleaved format")
-    parser.add_argument('--data_root', type=str, default="../../abrsm_data/musicXML",
+    parser.add_argument('--data_root', type=str, default="../../data",
                         help='Root directory containing MusicXML files')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='Output directory for ABCI files (optional)')
@@ -35,11 +37,18 @@ def main():
     
     args = parser.parse_args()
 
-    # Get list of XML files
-    xml_filelist = glob(path.join(args.data_root, "**/*.musicxml"), recursive=True)
+
+    # If output_dir is not specified, create one by appending "_abci" to data_root
+    if args.output_dir is None:
+        args.output_dir = args.data_root + "_abci"
+
+    # Get list of XML files (both .musicxml and .xml)
+    xml_filelist = glob(path.join(args.data_root, "**/*.[mM][uU][sS][iI][cC][xX][mM][lL]"), recursive=True) + \
+                   glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True) + \
+                   glob(path.join(args.data_root, "**/*.[mM][xX][lL]"), recursive=True) 
     
     if not xml_filelist:
-        print(f"No MusicXML files found in {args.data_root}")
+        print(f"No MusicXML or XML files found in {args.data_root}")
         return
 
     # Initialize counters

@@ -1,4 +1,6 @@
 **/logs/
+.DS_Store
+__MACOSX
 
 # Python-related files
 __pycache__/
