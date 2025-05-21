@@ -5,21 +5,29 @@ from os import path
 from utils.abc_helper.abc2abc_interleaved import abc2abc_interleaved
 from utils.mtf_helper.midi2mtf import midi2mtf
 from utils.mtf_helper.mtf2midi import mtf2midi
+from utils.abc_helper.fix_abc import fix_missing_voice_field, remove_empty_lines
 
 
-def convert_abc2abc_interleaved(input_file: str, output_file: Optional[str] = None) -> Optional[list[str]]:
+def convert_abc2abc_interleaved(input_file: str,
+                                output_file: Optional[str] = None,
+                                fix_abc: bool = True) -> Optional[list[str]]:
     """
     Convert ABC file to interleaved format for M3 model.
 
     Args:
         input_file (str): Path to the ABC file.
         output_file (Optional[str]): Path to save the interleaved file (.abci). If None, no file is saved.
-
+        fix_abc (bool): Whether to fix the ABC file. Default is True.
     Returns:
         Optional[list[str]]: Interleaved ABC lines if successful, None if an error occurs.
     """
     assert path.exists(input_file)
     abc_lines = open(path.abspath(input_file), 'r', encoding='utf-8').readlines()
+
+    if fix_abc:
+        abc_lines = fix_missing_voice_field(abc_lines)
+        abc_lines = remove_empty_lines(abc_lines)
+
     interleaved_abc_lines, error = abc2abc_interleaved(abc_lines)
 
     if not error:

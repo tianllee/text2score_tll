@@ -6,6 +6,7 @@ from functools import partial
 from tqdm import tqdm
 from utils.convert_formats import convert_abc2abc_interleaved
 
+
 def process_file(abc_file, data_root=None, output_dir=None):
     """Process a single ABC file to ABC interleaved format."""
     print(f"Processing {abc_file}")
@@ -18,24 +19,26 @@ def process_file(abc_file, data_root=None, output_dir=None):
             abci_file = path.join(output_dir, rel_path, path.basename(abci_file))
             # Ensure output directory exists
             makedirs(path.dirname(abci_file), exist_ok=True)
-        
-        abci_lines = convert_abc2abc_interleaved(abc_file, abci_file)
+
+        abci_lines = convert_abc2abc_interleaved(abc_file, abci_file,
+                                                 fix_abc=True)  # fix abc w/ missing voice field (e.g., V:1)
         if abci_lines is None:
             return False, abc_file
         return True, abc_file
     except Exception as e:
         return False, abc_file
 
+
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Convert ABC files to ABC interleaved format")
-    parser.add_argument('--data_root', type=str, default="../../abrsm_data/abc",
+    parser.add_argument('--data_root',
+                        type=str,
+                        default="../../abrsm_data/abc",
                         help='Root directory containing ABC files')
-    parser.add_argument('--output_dir', type=str, default=None,
-                        help='Output directory for ABCI files (optional)')
-    parser.add_argument('--num_workers', type=int, default=8,
-                        help='Number of worker processes for parallel processing')
-    
+    parser.add_argument('--output_dir', type=str, default=None, help='Output directory for ABCI files (optional)')
+    parser.add_argument('--num_workers', type=int, default=8, help='Number of worker processes for parallel processing')
+
     args = parser.parse_args()
 
     # If output_dir is not specified, create one by appending "_abci" to data_root
@@ -44,7 +47,7 @@ def main():
 
     # Get list of ABC files (case-insensitive)
     abc_filelist = glob(path.join(args.data_root, "**/*.[aA][bB][cC]"), recursive=True)
-    
+
     if not abc_filelist:
         print(f"No ABC files found in {args.data_root}")
         return
@@ -56,11 +59,10 @@ def main():
     with Pool(processes=args.num_workers) as pool:
         # Create partial function with data_root and output_dir
         process_func = partial(process_file, data_root=args.data_root, output_dir=args.output_dir)
-        
+
         # Process files with tqdm progress bar
-        results = list(tqdm(pool.imap(process_func, abc_filelist), 
-                           total=len(abc_filelist), 
-                           desc="Converting ABC to ABCI"))
+        results = list(
+            tqdm(pool.imap(process_func, abc_filelist), total=len(abc_filelist), desc="Converting ABC to ABCI"))
 
     # Count successes and failures
     for result, abc_file in results:
@@ -71,6 +73,7 @@ def main():
             print(f"Failed to convert {abc_file}")
 
     print(f"\nabc to abc_interleaved: success={success}, failure={fail}")
+
 
 if __name__ == "__main__":
     main()
