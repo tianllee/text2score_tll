@@ -1,36 +1,51 @@
+"""
+This code fixes various issues with ABCnotation dataset and abctoolkit 0.0.6.
+
+"""
+
+import re
+
+
 def fix_missing_voice_field(abc_lines):
-    has_voice_header = any(line.strip().startswith("V:") for line in abc_lines)
-    has_voice_tags = any("[V:" in line for line in abc_lines)
+    """
+    Fix missing voice field in ABC notation:
+    - Insert 'V:1 clef=treble' after the key signature.
+    - Insert 'V:1' before the first note line.
+    - Ensure note lines start with '|', without affecting header lines.
+    """
 
-    if has_voice_header and has_voice_tags:
-        return abc_lines  # Already has proper voice structure
+    # Step 1: Remove empty lines
+    abc_lines = [line for line in abc_lines if line.strip()]
 
-    fixed_lines = []
-    voice_inserted = False
-    body_started = False
-    header_fields = ("X:", "T:", "C:", "R:", "S:", "M:", "L:", "Q:", "K:", "Z:", "N:", "P:", "V:")
+    # Step 2: Find 'K:' line (key signature)
+    key_idx = next((i for i, line in enumerate(abc_lines) if line.startswith('K:')), -1)
+    if key_idx == -1:
+        raise ValueError("No key signature (K:) found.")
 
-    for line in abc_lines:
-        stripped = line.strip()
+    # Step 3: Insert 'V:1 clef=treble' after key signature
+    abc_lines.insert(key_idx + 1, 'V:1\n')
 
-        # Insert V:1 after K: if V: doesn't exist yet
-        if not has_voice_header and not voice_inserted and stripped.startswith("K:"):
-            fixed_lines.append(line)
-            fixed_lines.append("V:1")
-            voice_inserted = True
-            continue
+    # Step 4: Insert 'V:1' before the first music line (not a header line)
+    def is_music_line(line):
+        return not re.match(r'^[A-Za-z]:', line) and re.search(r'[A-Ga-gz]', line)
 
-        # After V:1 or K:, we consider body has started once we hit a non-header, non-empty line
-        if (has_voice_header or voice_inserted) and not stripped.startswith(header_fields) and stripped != "":
-            body_started = True
+    for i in range(key_idx + 2, len(abc_lines)):
+        if is_music_line(abc_lines[i]):
+            abc_lines.insert(i, 'V:1\n')
+            break
 
-        # If in body and line does not have [V:, prefix it
-        if body_started and not stripped.startswith("[V:") and stripped != "":
-            fixed_lines.append(f"[V:1]{line}")
-        else:
-            fixed_lines.append(line)
+    # Step 5: Add '|' at beginning of music lines if missing
+    for i in range(len(abc_lines)):
+        line = abc_lines[i]
+        if is_music_line(line):
+            stripped = line.strip()
+            if not stripped.startswith('|') and not stripped.startswith('[|') and not stripped.startswith(
+                    ':|') and not stripped.startswith('|:'):
+                abc_lines[i] = '|' + stripped + '\n'
+            elif not line.endswith('\n'):
+                abc_lines[i] = line + '\n'
 
-    return fixed_lines
+    return abc_lines
 
 
 def remove_empty_lines(abc_lines):
