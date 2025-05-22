@@ -104,17 +104,17 @@ def convert_abc2xml(input_file: str, output_file: Optional[str] = None) -> None:
     assert path.exists(input_file)
     input_file = path.abspath(input_file)
     if output_file is not None:
-        os.makedirs(path.dirname(output_file), exist_ok=True)
+        output_dir = path.dirname(output_file)
+        os.makedirs(output_dir, exist_ok=True)
     try:
-        cmd = f'python utils/abc_helper/abc2xml.py -o "{output_file}" "{input_file}"'
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
-        xml_lines = result.splitlines()
+        cmd = f'python utils/abc_helper/abc2xml.py -o "{output_dir}" "{input_file}"'
+        _ = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     except Exception as e:
         print(f'Error converting {input_file}: {e}')
         os.makedirs("logs", exist_ok=True)
         with open("logs/abc2xml_error_log.txt", "a", encoding="utf-8") as f:
             f.write(input_file + ' ' + str(e) + '\n')
-    return xml_lines
+    return None
 
 
 def convert_midi2mtf(input_file: str, output_file: Optional[str] = None):

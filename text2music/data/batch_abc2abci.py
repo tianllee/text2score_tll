@@ -17,12 +17,14 @@ def process_file(abc_file, data_root=None, output_dir=None, safe_convert=True):
     if safe_convert:
         print(f"Processing {abc_file} (safe_convert={safe_convert}, abc2xml2abci)")
         try:
+            abc_file = path.abspath(abc_file)
+            data_root = path.abspath(data_root)
             temp_xml_file = abc_file.rsplit(".", 1)[0] + ".xml"
             abci_file = abc_file.rsplit(".", 1)[0] + ".abci"
             if output_dir and data_root:
                 rel_path = path.relpath(path.dirname(abc_file), data_root)
-                temp_xml_file = path.join(output_dir, rel_path, path.basename(temp_xml_file))
-                abci_file = path.join(output_dir, rel_path, path.basename(abci_file))
+                temp_xml_file = path.normpath(path.join(output_dir, rel_path, path.basename(temp_xml_file)))
+                abci_file = path.normpath(path.join(output_dir, rel_path, path.basename(abci_file)))
             makedirs(path.dirname(temp_xml_file), exist_ok=True)
             _ = convert_abc2xml(abc_file, temp_xml_file)
 
