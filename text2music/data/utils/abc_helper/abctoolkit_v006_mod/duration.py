@@ -33,7 +33,8 @@ def calculate_bartext_duration(bar_text: str):
 
     note_set = ['A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f', 'G', 'g', 'X', 'x', 'Z', 'z']
     useless_char_set = ['P', 'S', 'O', 's', 'o', 'u', 'v', 'U', 'V', 'T', 'M', '.', '-', ')']
-    pitch_sign_set = ['_', '=', '^', '\'', ',']
+    # pitch_sign_set = ['_', '=', '^', '\'', ',']
+    pitch_sign_set = ['_', '=', '^', '\'', ',', '~']  # <--- FIX 2025-05-22
 
     # 删掉 !! "" {} 内容
     bar_text = remove_wrapped_content(bar_text, ['!!', '{}', '""'])
