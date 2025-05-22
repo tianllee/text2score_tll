@@ -4,8 +4,7 @@ import random
 import math
 from tqdm import trange
 from multiprocessing import Pool
-from abctoolkit.utils import extract_metadata_and_parts, extract_global_and_local_metadata, find_all_abc
-
+from utils.abc_helper.abctoolkit_v006_mod.utils import extract_metadata_and_parts, extract_global_and_local_metadata, find_all_abc
 
 Key_list = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 Note_list = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'c', 'd', 'e', 'f', 'g', 'a', 'b']
@@ -54,105 +53,511 @@ Transpose_key_matrix = {    # 转调矩阵，需要根据原key索引，左列ke
 }
 
 Key_accidental_dict = {
-    'Cb': {'C': '_', 'D': '_', 'E': '_', 'F': '_', 'G': '_', 'A': '_', 'B': '_'},
-    'Gb': {'C': '_', 'D': '_', 'E': '_', 'F': '=', 'G': '_', 'A': '_', 'B': '_'},
-    'Db': {'C': '=', 'D': '_', 'E': '_', 'F': '=', 'G': '_', 'A': '_', 'B': '_'},
-    'Ab': {'C': '=', 'D': '_', 'E': '_', 'F': '=', 'G': '=', 'A': '_', 'B': '_'},
-    'Eb': {'C': '=', 'D': '=', 'E': '_', 'F': '=', 'G': '=', 'A': '_', 'B': '_'},
-    'Bb': {'C': '=', 'D': '=', 'E': '_', 'F': '=', 'G': '=', 'A': '=', 'B': '_'},
-    'F' : {'C': '=', 'D': '=', 'E': '=', 'F': '=', 'G': '=', 'A': '=', 'B': '_'},
-    'C' : {'C': '=', 'D': '=', 'E': '=', 'F': '=', 'G': '=', 'A': '=', 'B': '='},
-    'G' : {'C': '=', 'D': '=', 'E': '=', 'F': '^', 'G': '=', 'A': '=', 'B': '='},
-    'D' : {'C': '^', 'D': '=', 'E': '=', 'F': '^', 'G': '=', 'A': '=', 'B': '='},
-    'A' : {'C': '^', 'D': '=', 'E': '=', 'F': '^', 'G': '^', 'A': '=', 'B': '='},
-    'E' : {'C': '^', 'D': '^', 'E': '=', 'F': '^', 'G': '^', 'A': '=', 'B': '='},
-    'B' : {'C': '^', 'D': '^', 'E': '=', 'F': '^', 'G': '^', 'A': '^', 'B': '='},
-    'F#': {'C': '^', 'D': '^', 'E': '^', 'F': '^', 'G': '^', 'A': '^', 'B': '='},
-    'C#': {'C': '^', 'D': '^', 'E': '^', 'F': '^', 'G': '^', 'A': '^', 'B': '^'},
+    'Cb': {
+        'C': '_',
+        'D': '_',
+        'E': '_',
+        'F': '_',
+        'G': '_',
+        'A': '_',
+        'B': '_'
+    },
+    'Gb': {
+        'C': '_',
+        'D': '_',
+        'E': '_',
+        'F': '=',
+        'G': '_',
+        'A': '_',
+        'B': '_'
+    },
+    'Db': {
+        'C': '=',
+        'D': '_',
+        'E': '_',
+        'F': '=',
+        'G': '_',
+        'A': '_',
+        'B': '_'
+    },
+    'Ab': {
+        'C': '=',
+        'D': '_',
+        'E': '_',
+        'F': '=',
+        'G': '=',
+        'A': '_',
+        'B': '_'
+    },
+    'Eb': {
+        'C': '=',
+        'D': '=',
+        'E': '_',
+        'F': '=',
+        'G': '=',
+        'A': '_',
+        'B': '_'
+    },
+    'Bb': {
+        'C': '=',
+        'D': '=',
+        'E': '_',
+        'F': '=',
+        'G': '=',
+        'A': '=',
+        'B': '_'
+    },
+    'F': {
+        'C': '=',
+        'D': '=',
+        'E': '=',
+        'F': '=',
+        'G': '=',
+        'A': '=',
+        'B': '_'
+    },
+    'C': {
+        'C': '=',
+        'D': '=',
+        'E': '=',
+        'F': '=',
+        'G': '=',
+        'A': '=',
+        'B': '='
+    },
+    'G': {
+        'C': '=',
+        'D': '=',
+        'E': '=',
+        'F': '^',
+        'G': '=',
+        'A': '=',
+        'B': '='
+    },
+    'D': {
+        'C': '^',
+        'D': '=',
+        'E': '=',
+        'F': '^',
+        'G': '=',
+        'A': '=',
+        'B': '='
+    },
+    'A': {
+        'C': '^',
+        'D': '=',
+        'E': '=',
+        'F': '^',
+        'G': '^',
+        'A': '=',
+        'B': '='
+    },
+    'E': {
+        'C': '^',
+        'D': '^',
+        'E': '=',
+        'F': '^',
+        'G': '^',
+        'A': '=',
+        'B': '='
+    },
+    'B': {
+        'C': '^',
+        'D': '^',
+        'E': '=',
+        'F': '^',
+        'G': '^',
+        'A': '^',
+        'B': '='
+    },
+    'F#': {
+        'C': '^',
+        'D': '^',
+        'E': '^',
+        'F': '^',
+        'G': '^',
+        'A': '^',
+        'B': '='
+    },
+    'C#': {
+        'C': '^',
+        'D': '^',
+        'E': '^',
+        'F': '^',
+        'G': '^',
+        'A': '^',
+        'B': '^'
+    },
 }
 
 Key2index = {
-    'Cb': 11, 'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'Eb': 3, 'E': 4, 'F': 5, 'F#': 6,
-    'Gb': 6, 'G': 7, 'Ab': 8, 'A': 9, 'Bb': 10, 'B': 11,
+    'Cb': 11,
+    'C': 0,
+    'C#': 1,
+    'Db': 1,
+    'D': 2,
+    'Eb': 3,
+    'E': 4,
+    'F': 5,
+    'F#': 6,
+    'Gb': 6,
+    'G': 7,
+    'Ab': 8,
+    'A': 9,
+    'Bb': 10,
+    'B': 11,
 }
 Note2index = {'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6}
 
 Note2pitch = {
-    'C': 60, 'D': 62, 'E': 64, 'F': 65, 'G': 67, 'A': 69, 'B': 71,
-    'c': 72, 'd': 74, 'e': 76, 'f': 77, 'g': 79, 'a': 81, 'b': 83,
-    '__C': 58, '_C': 59, '=C': 60, '^C': 61, '^^C': 62,
-    '__D': 60, '_D': 61, '=D': 62, '^D': 63, '^^D': 64,
-    '__E': 62, '_E': 63, '=E': 64, '^E': 65, '^^E': 66,
-    '__F': 63, '_F': 64, '=F': 65, '^F': 66, '^^F': 67,
-    '__G': 65, '_G': 66, '=G': 67, '^G': 68, '^^G': 69,
-    '__A': 67, '_A': 68, '=A': 69, '^A': 70, '^^A': 71,
-    '__B': 69, '_B': 70, '=B': 71, '^B': 72, '^^B': 73,
-    '__c': 70, '_c': 71, '=c': 72, '^c': 73, '^^c': 74,
-    '__d': 72, '_d': 73, '=d': 74, '^d': 75, '^^d': 76,
-    '__e': 74, '_e': 75, '=e': 76, '^e': 77, '^^e': 78,
-    '__f': 75, '_f': 76, '=f': 77, '^f': 78, '^^f': 79,
-    '__g': 77, '_g': 78, '=g': 79, '^g': 80, '^^g': 81,
-    '__a': 79, '_a': 80, '=a': 81, '^a': 82, '^^a': 83,
-    '__b': 81, '_b': 82, '=b': 83, '^b': 84, '^^b': 85,
+    'C': 60,
+    'D': 62,
+    'E': 64,
+    'F': 65,
+    'G': 67,
+    'A': 69,
+    'B': 71,
+    'c': 72,
+    'd': 74,
+    'e': 76,
+    'f': 77,
+    'g': 79,
+    'a': 81,
+    'b': 83,
+    '__C': 58,
+    '_C': 59,
+    '=C': 60,
+    '^C': 61,
+    '^^C': 62,
+    '__D': 60,
+    '_D': 61,
+    '=D': 62,
+    '^D': 63,
+    '^^D': 64,
+    '__E': 62,
+    '_E': 63,
+    '=E': 64,
+    '^E': 65,
+    '^^E': 66,
+    '__F': 63,
+    '_F': 64,
+    '=F': 65,
+    '^F': 66,
+    '^^F': 67,
+    '__G': 65,
+    '_G': 66,
+    '=G': 67,
+    '^G': 68,
+    '^^G': 69,
+    '__A': 67,
+    '_A': 68,
+    '=A': 69,
+    '^A': 70,
+    '^^A': 71,
+    '__B': 69,
+    '_B': 70,
+    '=B': 71,
+    '^B': 72,
+    '^^B': 73,
+    '__c': 70,
+    '_c': 71,
+    '=c': 72,
+    '^c': 73,
+    '^^c': 74,
+    '__d': 72,
+    '_d': 73,
+    '=d': 74,
+    '^d': 75,
+    '^^d': 76,
+    '__e': 74,
+    '_e': 75,
+    '=e': 76,
+    '^e': 77,
+    '^^e': 78,
+    '__f': 75,
+    '_f': 76,
+    '=f': 77,
+    '^f': 78,
+    '^^f': 79,
+    '__g': 77,
+    '_g': 78,
+    '=g': 79,
+    '^g': 80,
+    '^^g': 81,
+    '__a': 79,
+    '_a': 80,
+    '=a': 81,
+    '^a': 82,
+    '^^a': 83,
+    '__b': 81,
+    '_b': 82,
+    '=b': 83,
+    '^b': 84,
+    '^^b': 85,
 }
 
 Pitch2note = {
-    0:  ['=',       '__',       '____',     None,       None,       '^^^',      '^',    ],
-    1:  ['^',       '_',        '___',      '____',     None,       '^^^^',     '^^',   ],
-    2:  ['^^',      '=',        '__',       '___',      None,       None,       '^^^',  ],
-    3:  ['^^^',     '^',        '_',        '__',       '____',     None,       '^^^^', ],
-    4:  ['^^^^',    '^^',       '=',        '_',        '___',      None,       None,   ],
-    5:  [None,      '^^^',      '^',        '=',        '__',       '____',     None,   ],
-    6:  [None,      '^^^^',     '^^',       '^',        '_',        '___',      None,   ],
-    7:  [None,      None,       '^^^',      '^^',       '=',        '__',       '____', ],
-    8:  ['____',    None,       '^^^^',     '^^^',      '^',        '_',        '___',  ],
-    9:  ['___',     None,       None,       '^^^^',     '^^',       '=',        '__',   ],
-    10: ['__',      '____',     None,       None,       '^^^',      '^',        '_',    ],
-    11: ['_',       '___',      None,       None,       '^^^^',     '^^',       '=',    ],
+    0: [
+        '=',
+        '__',
+        '____',
+        None,
+        None,
+        '^^^',
+        '^',
+    ],
+    1: [
+        '^',
+        '_',
+        '___',
+        '____',
+        None,
+        '^^^^',
+        '^^',
+    ],
+    2: [
+        '^^',
+        '=',
+        '__',
+        '___',
+        None,
+        None,
+        '^^^',
+    ],
+    3: [
+        '^^^',
+        '^',
+        '_',
+        '__',
+        '____',
+        None,
+        '^^^^',
+    ],
+    4: [
+        '^^^^',
+        '^^',
+        '=',
+        '_',
+        '___',
+        None,
+        None,
+    ],
+    5: [
+        None,
+        '^^^',
+        '^',
+        '=',
+        '__',
+        '____',
+        None,
+    ],
+    6: [
+        None,
+        '^^^^',
+        '^^',
+        '^',
+        '_',
+        '___',
+        None,
+    ],
+    7: [
+        None,
+        None,
+        '^^^',
+        '^^',
+        '=',
+        '__',
+        '____',
+    ],
+    8: [
+        '____',
+        None,
+        '^^^^',
+        '^^^',
+        '^',
+        '_',
+        '___',
+    ],
+    9: [
+        '___',
+        None,
+        None,
+        '^^^^',
+        '^^',
+        '=',
+        '__',
+    ],
+    10: [
+        '__',
+        '____',
+        None,
+        None,
+        '^^^',
+        '^',
+        '_',
+    ],
+    11: [
+        '_',
+        '___',
+        None,
+        None,
+        '^^^^',
+        '^^',
+        '=',
+    ],
 }
 
 Pitch2Chordnote = {
-    0:  ['',    'bb',   None,   None,   None,   '###',  '#',    ],
-    1:  ['#',   'b',    'bbb',  None,   None,   None,   '##',   ],
-    2:  ['##',  '',     'bb',   'bbb',  None,   None,   '###',  ],
-    3:  ['###', '#',    'b',    'bb',   None,   None,   None,   ],
-    4:  [None,  '##',   '',     'b',    'bbb',  None,   None,   ],
-    5:  [None,  '###',  '#',    '',     'bb',   None,   None,   ],
-    6:  [None,  None,   '##',   '#',    'b',    'bbb',  None,   ],
-    7:  [None,  None,   '###',  '##',   '',     'bb',   None,   ],
-    8:  [None,  None,   None,   '###',  '#',    'b',    'bbb',  ],
-    9:  ['bbb', None,   None,   None,   '##',   '',     'bb',   ],
-    10: ['bb',  None,   None,   None,   '###',  '#',    'b',    ],
-    11: ['b',   'bbb',  None,   None,   None,   '##',   '',     ],
+    0: [
+        '',
+        'bb',
+        None,
+        None,
+        None,
+        '###',
+        '#',
+    ],
+    1: [
+        '#',
+        'b',
+        'bbb',
+        None,
+        None,
+        None,
+        '##',
+    ],
+    2: [
+        '##',
+        '',
+        'bb',
+        'bbb',
+        None,
+        None,
+        '###',
+    ],
+    3: [
+        '###',
+        '#',
+        'b',
+        'bb',
+        None,
+        None,
+        None,
+    ],
+    4: [
+        None,
+        '##',
+        '',
+        'b',
+        'bbb',
+        None,
+        None,
+    ],
+    5: [
+        None,
+        '###',
+        '#',
+        '',
+        'bb',
+        None,
+        None,
+    ],
+    6: [
+        None,
+        None,
+        '##',
+        '#',
+        'b',
+        'bbb',
+        None,
+    ],
+    7: [
+        None,
+        None,
+        '###',
+        '##',
+        '',
+        'bb',
+        None,
+    ],
+    8: [
+        None,
+        None,
+        None,
+        '###',
+        '#',
+        'b',
+        'bbb',
+    ],
+    9: [
+        'bbb',
+        None,
+        None,
+        None,
+        '##',
+        '',
+        'bb',
+    ],
+    10: [
+        'bb',
+        None,
+        None,
+        None,
+        '###',
+        '#',
+        'b',
+    ],
+    11: [
+        'b',
+        'bbb',
+        None,
+        None,
+        None,
+        '##',
+        '',
+    ],
 }
 
 Key2Mode = {
-    'Cb': ['Cb',    'Dbdor',    'Ebphr',    'Fblyd',    'Gbmix',    'Abmin',    'Abm',  'Bbloc'],
-    'Gb': ['Gb',    'Abdor',    'Bbphr',    'Cblyd',    'Dbmix',    'Ebmin',    'Ebm',  'Floc'],
-    'Db': ['Db',    'Ebdor',    'Fphr',     'Gblyd',    'Abmix',    'Bbmin',    'Bbm',  'Cloc'],
-    'Ab': ['Ab',    'Bbdor',    'Cphr',     'Dblyd',    'Ebmix',    'Fmin',     'Fm',   'Gloc'],
-    'Eb': ['Eb',    'Fdor',     'Gphr',     'Ablyd',    'Bbmix',    'Cmin',     'Cm',   'Dloc'],
-    'Bb': ['Bb',    'Cdor',     'Dphr',     'Eblyd',    'Fmix',     'Gmin',     'Gm',   'Aloc'],
-    'F' : ['F',     'Gdor',     'Aphr',     'Bblyd',    'Cmix',     'Dmin',     'Dm',   'Eloc'],
-    'C' : ['C',     'Ddor',     'Ephr',     'Flyd',     'Gmix',     'Amin',     'Am',   'Bloc'],
-    'G' : ['G',     'Ador',     'Bphr',     'Clyd',     'Dmix',     'Emin',     'Em',   'F#loc'],
-    'D' : ['D',     'Edor',     'F#phr',    'Glyd',     'Amix',     'Bmin',     'Bm',   'C#loc'],
-    'A' : ['A',     'Bdor',     'C#phr',    'Dlyd',     'Emix',     'F#min',    'F#m',  'G#loc'],
-    'E' : ['E',     'F#dor',    'G#phr',    'Alyd',     'Bmix',     'C#min',    'C#m',  'D#loc'],
-    'B' : ['B',     'C#dor',    'D#phr',    'Elyd',     'F#mix',    'G#min',    'G#m',  'A#loc'],
-    'F#': ['F#',    'G#dor',    'A#phr',    'Blyd',     'C#mix',    'D#min',    'D#m',  'E#loc'],
-    'C#': ['C#',    'D#dor',    'E#phr',    'F#lyd',    'G#mix',    'A#min',    'A#m',  'B#loc'],
+    'Cb': ['Cb', 'Dbdor', 'Ebphr', 'Fblyd', 'Gbmix', 'Abmin', 'Abm', 'Bbloc'],
+    'Gb': ['Gb', 'Abdor', 'Bbphr', 'Cblyd', 'Dbmix', 'Ebmin', 'Ebm', 'Floc'],
+    'Db': ['Db', 'Ebdor', 'Fphr', 'Gblyd', 'Abmix', 'Bbmin', 'Bbm', 'Cloc'],
+    'Ab': ['Ab', 'Bbdor', 'Cphr', 'Dblyd', 'Ebmix', 'Fmin', 'Fm', 'Gloc'],
+    'Eb': ['Eb', 'Fdor', 'Gphr', 'Ablyd', 'Bbmix', 'Cmin', 'Cm', 'Dloc'],
+    'Bb': ['Bb', 'Cdor', 'Dphr', 'Eblyd', 'Fmix', 'Gmin', 'Gm', 'Aloc'],
+    'F': ['F', 'Gdor', 'Aphr', 'Bblyd', 'Cmix', 'Dmin', 'Dm', 'Eloc'],
+    'C': ['C', 'Ddor', 'Ephr', 'Flyd', 'Gmix', 'Amin', 'Am', 'Bloc'],
+    'G': ['G', 'Ador', 'Bphr', 'Clyd', 'Dmix', 'Emin', 'Em', 'F#loc'],
+    'D': ['D', 'Edor', 'F#phr', 'Glyd', 'Amix', 'Bmin', 'Bm', 'C#loc'],
+    'A': ['A', 'Bdor', 'C#phr', 'Dlyd', 'Emix', 'F#min', 'F#m', 'G#loc'],
+    'E': ['E', 'F#dor', 'G#phr', 'Alyd', 'Bmix', 'C#min', 'C#m', 'D#loc'],
+    'B': ['B', 'C#dor', 'D#phr', 'Elyd', 'F#mix', 'G#min', 'G#m', 'A#loc'],
+    'F#': ['F#', 'G#dor', 'A#phr', 'Blyd', 'C#mix', 'D#min', 'D#m', 'E#loc'],
+    'C#': ['C#', 'D#dor', 'E#phr', 'F#lyd', 'G#mix', 'A#min', 'A#m', 'B#loc'],
 }
 
 Mode2Key = {mode: key for key in Key2Mode.keys() for mode in Key2Mode[key]}
 
-EqualNote = {'Cb': 'B',     'C': 'B#',      'C#': 'Db',
-             'Db': 'C#',                    'D#': 'Eb',
-             'Eb': 'D#',    'E': 'Fb',      'E#': 'F',
-             'Fb': 'E',     'F': 'E#',      'F#': 'Gb',
-             'Gb': 'F#',                    'G#': 'Ab',
-             'Ab': 'G#',                    'A#': 'Bb',
-             'Bb': 'A#',    'B': 'Cb',      'B#': 'C'}
+EqualNote = {
+    'Cb': 'B',
+    'C': 'B#',
+    'C#': 'Db',
+    'Db': 'C#',
+    'D#': 'Eb',
+    'Eb': 'D#',
+    'E': 'Fb',
+    'E#': 'F',
+    'Fb': 'E',
+    'F': 'E#',
+    'F#': 'Gb',
+    'Gb': 'F#',
+    'G#': 'Ab',
+    'Ab': 'G#',
+    'A#': 'Bb',
+    'Bb': 'A#',
+    'B': 'Cb',
+    'B#': 'C'
+}
 
 
 def lookup_key_according_to_keymode(keymode):
@@ -202,7 +607,8 @@ def transpose_a_chordnote(chordnote, ori_key, des_key):
     transposed_absolute_pitch = (absolute_pitch + interval + 12) % 12
 
     # 计算转调后的音名和升降号
-    transposed_chordnotename = Key_list[(Key_list.index(chordnotename.upper()) + Note2index[des_key[0]] - Note2index[ori_key[0]] + 7) % 7]
+    transposed_chordnotename = Key_list[(Key_list.index(chordnotename.upper()) + Note2index[des_key[0]] -
+                                         Note2index[ori_key[0]] + 7) % 7]
     transposed_accidental = Pitch2Chordnote[transposed_absolute_pitch % 12][Note2index[transposed_chordnotename]]
     if transposed_accidental is None:
         raise Exception('Cannot find proper notename')
@@ -237,7 +643,8 @@ def transpose_a_note(note, ori_key, des_key):
     transposed_absolute_pitch = absolute_pitch + interval
 
     # 计算转调后的音名和升降号
-    transposed_notename = Key_list[(Key_list.index(notename.upper()) + Note2index[des_key[0]] - Note2index[ori_key[0]] + 7) % 7]
+    transposed_notename = Key_list[(Key_list.index(notename.upper()) + Note2index[des_key[0]] - Note2index[ori_key[0]] +
+                                    7) % 7]
     transposed_accidental = Pitch2note[transposed_absolute_pitch % 12][Note2index[transposed_notename]]
     if transposed_accidental is None:
         raise Exception('Cannot find proper notename')
@@ -317,10 +724,10 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
             keymode_start_index_list.append(key_start)
             keymode_end_index_list.append(key_end)
 
-        elif squareBracket_string[2] == ':':    # information field，全部置0
+        elif squareBracket_string[2] == ':':  # information field，全部置0
             for j in range(sqaureBracket_start, sqaureBracket_end):
                 transpose_ascii_list[j] = 0
-        else:   # chord，只将[]置0
+        else:  # chord，只将[]置0
             transpose_ascii_list[sqaureBracket_start] = 0
             transpose_ascii_list[sqaureBracket_end - 1] = 0
 
@@ -348,10 +755,10 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
                 chordnote_start_index_list.append(chordnote_start)
                 chordnote_end_index_list.append(chordnote_end)
 
-            for j in range(quote_start, quote_end): # 除 chordnote 外全部置-2
+            for j in range(quote_start, quote_end):  # 除 chordnote 外全部置-2
                 if transpose_ascii_list[j] != 2:
                     transpose_ascii_list[j] = -2
-        else:   # text annotations 全部置0
+        else:  # text annotations 全部置0
             for j in range(quote_start, quote_end):
                 transpose_ascii_list[j] = -2
 
@@ -362,7 +769,6 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
         exclaim_end = exclaim_match.end()
         for j in range(exclaim_start, exclaim_end):
             transpose_ascii_list[j] = -2
-
 
     # 挑小节线
     barline_list = []
@@ -381,7 +787,7 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
                 transpose_ascii_list[i] = 4
 
     # 挑出音符
-    note_section_string_list = []   # for debug
+    note_section_string_list = []  # for debug
     note_list = []
     note_start_index_list = []
     note_end_index_list = []
@@ -430,27 +836,38 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
     elements_to_transpose = []
     for i in range(len(barline_list)):
         elements_to_transpose.append({
-            'type': 4, 'note': barline_list[i],
-            'start': barline_start_index_list[i], 'end': barline_end_index_list[i],
+            'type': 4,
+            'note': barline_list[i],
+            'start': barline_start_index_list[i],
+            'end': barline_end_index_list[i],
             'transposed_content': barline_list[i]
         })
     for i in range(len(keymode_list)):
         elements_to_transpose.append({
-            'type': 3, 'note': keymode_list[i], 'start': keymode_start_index_list[i], 'end': keymode_end_index_list[i],
+            'type': 3,
+            'note': keymode_list[i],
+            'start': keymode_start_index_list[i],
+            'end': keymode_end_index_list[i],
             'ori_key': ori_key_ascii_list[keymode_start_index_list[i]],
             'des_key': trasposed_key_ascii_list[keymode_start_index_list[i]],
             'transposed_content': trasposed_keymode_ascii_list[keymode_start_index_list[i]],
         })
     for i in range(len(chordnote_list)):
         elements_to_transpose.append({
-            'type': 2, 'note': chordnote_list[i], 'start': chordnote_start_index_list[i], 'end': chordnote_end_index_list[i],
+            'type': 2,
+            'note': chordnote_list[i],
+            'start': chordnote_start_index_list[i],
+            'end': chordnote_end_index_list[i],
             'ori_key': ori_key_ascii_list[chordnote_start_index_list[i]],
             'des_key': trasposed_key_ascii_list[chordnote_start_index_list[i]],
             'transposed_content': None
         })
     for i in range(len(note_list)):
         elements_to_transpose.append({
-            'type': 1, 'note': note_list[i], 'start': note_start_index_list[i], 'end': note_end_index_list[i],
+            'type': 1,
+            'note': note_list[i],
+            'start': note_start_index_list[i],
+            'end': note_end_index_list[i],
             'ori_key': ori_key_ascii_list[note_start_index_list[i]],
             'des_key': trasposed_key_ascii_list[note_start_index_list[i]],
             'actual_note': None,
@@ -462,7 +879,7 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
     transposed_abc_text = ''
     index = 0
     for i, ele in enumerate(elements_to_transpose):
-        transposed_abc_text += abc_text[index : ele['start']]
+        transposed_abc_text += abc_text[index:ele['start']]
         index = ele['end']
 
         if ele['type'] == 3 or ele['type'] == 4:
@@ -470,9 +887,9 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
         elif ele['type'] == 2:
             ele['transposed_content'] = transpose_a_chordnote(ele['note'], ele['ori_key'], ele['des_key'])
         elif ele['type'] == 1:
-            if ele['note'][0] in ['^', '=', '_']: # 如果本身带临时升降号，实际音高就为带临时升降号的音
+            if ele['note'][0] in ['^', '=', '_']:  # 如果本身带临时升降号，实际音高就为带临时升降号的音
                 ele['actual_note'] = ele['note']
-            else:   # 往前回溯到一个小节线/key/相同音名和八度的音符
+            else:  # 往前回溯到一个小节线/key/相同音名和八度的音符
                 j = i
 
                 while j > 0:
@@ -486,7 +903,7 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
                     elif elements_to_transpose[j]['type'] == 1:
                         # 若音和前一个相同（注意，不仅音名，八度也要相同）
                         pre_note = elements_to_transpose[j]['note']
-                        pre_note_name = re.sub(r'^[=^_]*', '', pre_note)    # 去掉前面的临时升降号，但不去掉后面的八度记号
+                        pre_note_name = re.sub(r'^[=^_]*', '', pre_note)  # 去掉前面的临时升降号，但不去掉后面的八度记号
                         if ele['note'] == pre_note_name:
                             ele['actual_note'] = elements_to_transpose[j]['actual_note']
                             break
@@ -515,23 +932,24 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
                 if elements_to_transpose[j]['type'] == 4 or elements_to_transpose[j]['type'] == 3:  # 回溯到小节线或者调号
                     # 根据调号来判断是否去掉临时升降号
                     ele_des_key = ele['des_key']
-                    if accidental == Key_accidental_dict[ele_des_key][notename.upper()]: # 和调式升降号相符，则去掉临时升降号
+                    if accidental == Key_accidental_dict[ele_des_key][notename.upper()]:  # 和调式升降号相符，则去掉临时升降号
                         ele['transposed_content'] = notename + octave
                     else:
                         ele['transposed_content'] = ele['transposed_actual_note']
                     break
-                elif elements_to_transpose[j]['type'] == 1: # 回溯到音符
+                elif elements_to_transpose[j]['type'] == 1:  # 回溯到音符
                     pre_note = elements_to_transpose[j]['transposed_actual_note']
                     pre_notename_octave = re.sub(r'^[=^_]*', '', pre_note)
                     cur_note = ele['transposed_actual_note']
                     cur_notename_octave = re.sub(r'^[=^_]*', '', cur_note)
                     if pre_notename_octave == cur_notename_octave:  # 如果transposed_actual_note的音名+八度和前一个相同
-                        if ele['transposed_actual_note'] == elements_to_transpose[j]['transposed_actual_note']: # 如果就是同一个音，则去掉临时升降号
+                        if ele['transposed_actual_note'] == elements_to_transpose[j][
+                                'transposed_actual_note']:  # 如果就是同一个音，则去掉临时升降号
                             ele['transposed_content'] = notename + octave
-                        else:   # 如果不是同一个音，保留临时升降号
+                        else:  # 如果不是同一个音，保留临时升降号
                             ele['transposed_content'] = ele['transposed_actual_note']
                         break
-                    else:   # 继续往前回溯
+                    else:  # 继续往前回溯
                         pass
 
             if j == 0 and ele['transposed_content'] is None:  # 如果很不幸就是第一个元素，或者没有回溯到以上三种类型，则根据调号来判断是否去掉临时升降号
@@ -541,10 +959,9 @@ def transpose_a_voice(abc_text, ori_keymode, des_key):
                 else:
                     ele['transposed_content'] = ele['transposed_actual_note']
 
-
         transposed_abc_text += ele['transposed_content']
 
-    transposed_abc_text += abc_text[index :]
+    transposed_abc_text += abc_text[index:]
 
     return transposed_abc_text
 
@@ -650,7 +1067,6 @@ def batch_transpose(ori_folder, des_folder):
     pool.map(transposed_abc_path_list, arg_lists)
 
 
-
 def sample_and_test(dataset_folder):
     file_list = os.listdir(dataset_folder)
     random_files = random.sample(file_list, 10)
@@ -660,7 +1076,8 @@ def sample_and_test(dataset_folder):
         for i, file in enumerate(random_files):
             print(file)
             file_path = os.path.join(dataset_folder, file)
-            des_key = random.sample(['Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], 1)[0]
+            des_key = random.sample(['Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'],
+                                    1)[0]
             with open(file_path, 'r', encoding='utf-8') as f:
                 abc_text_lines = f.readlines()
 
@@ -670,17 +1087,15 @@ def sample_and_test(dataset_folder):
 
             transposed_abc_text = transpose_an_abc_text(abc_text_lines, des_key)
 
-            w.write('X:' + str(2*i+2) + '\n')
+            w.write('X:' + str(2 * i + 2) + '\n')
             w.write('%%' + file + ' ' + des_key + '\n')
             w.write(transposed_abc_text)
             w.write('\n\n')
 
-            print('X:', str(2*i+2))
+            print('X:', str(2 * i + 2))
             print(transposed_abc_text)
 
 
-
-
 if __name__ == '__main__':
-    
+
     pass

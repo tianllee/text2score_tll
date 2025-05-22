@@ -1,10 +1,10 @@
 import os
-from abctoolkit.utils import find_all_abc, extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated
-from abctoolkit.check import check_alignment_unrotated
+from utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc, extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated
+from utils.abc_helper.abctoolkit_v006_mod.check import check_alignment_unrotated
 
 
 def rotate_abc(abc_lines: list):
-    
+
     metadata_lines, prefix_dict, left_barline_dict, bar_text_dict, right_barline_dict = \
         extract_barline_and_bartext_dict(abc_lines)
 

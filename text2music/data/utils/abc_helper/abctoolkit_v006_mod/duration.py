@@ -1,6 +1,6 @@
 import re
 from fractions import Fraction
-from abctoolkit.utils import SquareBracket_re, remove_square_bracket_information_field, remove_wrapped_content
+from utils.abc_helper.abctoolkit_v006_mod.utils import SquareBracket_re, remove_square_bracket_information_field, remove_wrapped_content
 
 
 def calculate_single_note_duration(note_text: str):
@@ -64,7 +64,7 @@ def calculate_bartext_duration(bar_text: str):
         # 处理(，如果(后面跟了数字，则留下，否则删掉
         index_to_detele = []
         for i, char in enumerate(bar_text):
-            if bar_text[i] == '(' and (len(bar_text) == i + 1 or not bar_text[i+1].isnumeric()):
+            if bar_text[i] == '(' and (len(bar_text) == i + 1 or not bar_text[i + 1].isnumeric()):
                 index_to_detele.append(i)
         bar_text_list = list(bar_text)
         # print(bar_text_list, index_to_detele)
@@ -73,7 +73,7 @@ def calculate_bartext_duration(bar_text: str):
 
         bar_text = ''.join(bar_text_list)
 
-        ele_list = []   # 存放：音符、时值组合、附点大小于号
+        ele_list = []  # 存放：音符、时值组合、附点大小于号
         # 处理各个字符，整理进入note_list
         index = 0
         for i, char in enumerate(bar_text):
@@ -83,24 +83,24 @@ def calculate_bartext_duration(bar_text: str):
             if char in note_set:
                 index = i + 1
                 while index < len(bar_text):
-                    if bar_text[index] in note_set + ['(', '<', '>'] :
+                    if bar_text[index] in note_set + ['(', '<', '>']:
                         break
                     index += 1
                 ele_list.append(bar_text[i:index])
-            elif char == '(': # 三连音之类的
+            elif char == '(':  # 三连音之类的
                 # 判断时值组合方式（截到最后一个数字和冒号）
                 index = i + 1
                 while bar_text[index].isnumeric() or bar_text[index] == ':':
                     index += 1
                 ele_list.append(bar_text[i:index])
-            elif char in ['<', '>']: # 附点，截到非<>的字符
+            elif char in ['<', '>']:  # 附点，截到非<>的字符
                 index = i + 1
                 while bar_text[index] in ['<', '>']:
                     index += 1
                 ele_list.append(bar_text[i:index])
 
         ele_list = [ele.strip() for ele in ele_list]
-        dur_list = [-1] * len(ele_list) # -1 表示元素时值未定
+        dur_list = [-1] * len(ele_list)  # -1 表示元素时值未定
 
         # 先统计每个音符的时值
         for i, ele in enumerate(ele_list):
@@ -111,9 +111,9 @@ def calculate_bartext_duration(bar_text: str):
         # 统计附点组合的时值，清除附点两侧的音符时值（置0），附点组合时值记录在附点处
         for i, ele in enumerate(ele_list):
             if ele[0] in ['<', '>']:
-                dur_list[i] = dur_list[i-1] + dur_list[i+1]
-                dur_list[i-1] = 0
-                dur_list[i+1] = 0
+                dur_list[i] = dur_list[i - 1] + dur_list[i + 1]
+                dur_list[i - 1] = 0
+                dur_list[i + 1] = 0
 
         # 统计连音组合的时值，清除属于连音组合的音符的时值（置0），连音组合时值记录在连音处
         # 如果存在连音套连音的情况，里面的连音时值划为置0
@@ -138,7 +138,7 @@ def calculate_bartext_duration(bar_text: str):
                     left_bound = i + 1
                     index = i + 1
                     note_count = 0
-                    local_uncertain_flag = False    # 局部范围内若有未定元素，则退出，算下一个连音组合
+                    local_uncertain_flag = False  # 局部范围内若有未定元素，则退出，算下一个连音组合
                     while note_count < r:
                         if ele_list[index][0].isalpha():
                             note_count += 1
@@ -149,11 +149,11 @@ def calculate_bartext_duration(bar_text: str):
                     right_bound = index
                     if local_uncertain_flag:
                         continue
-                    else:   # 局部范围内时值均确定，计算时值，范围内所有元素时值置0
-                        dur_list[i] = sum(dur_list[left_bound : right_bound]) * Fraction(numerator=q, denominator=p)
-                        dur_list[i] = round_fraction(dur_list[i])   # 做一波约减
-                        dur_list[left_bound : right_bound] = [0] * (right_bound - left_bound)
-                elif dur_list[i] == -1: # 未定元素但非连音，报错
+                    else:  # 局部范围内时值均确定，计算时值，范围内所有元素时值置0
+                        dur_list[i] = sum(dur_list[left_bound:right_bound]) * Fraction(numerator=q, denominator=p)
+                        dur_list[i] = round_fraction(dur_list[i])  # 做一波约减
+                        dur_list[left_bound:right_bound] = [0] * (right_bound - left_bound)
+                elif dur_list[i] == -1:  # 未定元素但非连音，报错
                     raise Exception('Uncertain element')
 
         bar_duration = sum(dur_list)

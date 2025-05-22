@@ -1,5 +1,5 @@
-from abctoolkit.utils import extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated, fast_ld_sim
-from abctoolkit.duration import calculate_bartext_duration
+from utils.abc_helper.abctoolkit_v006_mod.utils import extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated, fast_ld_sim
+from utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
 
 
 def check_alignment_according_to_barline_and_bartext_dict(left_barline_dict, bar_text_dict, right_barline_dict):
@@ -30,6 +30,7 @@ def check_alignment_according_to_barline_and_bartext_dict(left_barline_dict, bar
 
     return barline_equal_flag, bar_no_equal_flag, bar_dur_equal_flag
 
+
 def check_alignment_unrotated(abc_lines: list):
     '''
     检查各声部小节线是否相等、小节数是否相等、每个小节各个声部时值是否相等
@@ -54,5 +55,3 @@ def check_alignment_rotated(abc_lines: list, delete_last_line=False):
 
 def check_plagiarism(abc_1: str, abc_2: str):
     return fast_ld_sim(abc_1, abc_2) >= 0.85
-
-

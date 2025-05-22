@@ -1,7 +1,7 @@
 import os
 import math
-from abctoolkit.transpose import transpose_an_abc_text
-from abctoolkit.utils import find_all_abc
+from utils.abc_helper.abctoolkit_v006_mod.transpose import transpose_an_abc_text
+from utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc
 from multiprocessing import Pool
 from tqdm import tqdm
 
@@ -9,6 +9,7 @@ KEY_CHOICES = ["Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E",
 
 ORI_DIR = r'D:\Research\Projects\MultitrackComposer\dataset\06_abc_text-filtered\musescoreV2'
 AUGMENTED_DIR = r'D:\Research\Projects\MultitrackComposer\dataset\08_abc_key-augmented\musescoreV2'
+
 
 def split_list_by_cpu(lst: list):
     num_cpus = os.cpu_count()
@@ -65,7 +66,6 @@ def batch_transpose(ori_folder, des_folder):
 
     pool = Pool(processes=os.cpu_count())
     pool.map(key_augment_abcs, arg_lists)
-
 
 
 if __name__ == '__main__':

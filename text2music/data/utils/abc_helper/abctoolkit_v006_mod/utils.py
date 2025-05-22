@@ -452,16 +452,27 @@ def split_into_bars(abc_text: str):
     return bars
 
 
+# Fixing split_into_bars_and_barlines(...) to avoid '|:\n:|` issues.
 def split_into_bars_and_barlines(abc_text: str):
     '''
-    Split a voice text into bars / left_barlines / right_barlines
+    Split an ABC notation voice line into prefix, left_barlines, bar contents, and right_barlines.
+    Robust to newlines inside barlines (e.g., "|:\n:|").
     '''
 
-    bars = re.split(Barline_regexPattern, abc_text.strip())
-    bars = [bar for bar in bars if bar.strip() != '']  # remove empty strings
-    bars = [bars[0]] + [bars[i] for i in range(1, len(bars)) if bars[i] != bars[i - 1]]  # 防止出现连续小节线的情况
+    # 1. Normalize and collapse newlines inside potential barlines (e.g., '|:\n:|' -> '|::|')
+    abc_text = re.sub(r'([|:])\s*\n\s*([|:])', r'\1\2', abc_text)
 
-    prefix = ''  # 前缀，用来容纳最开头的[K:]这种
+    # 2. Remove standalone newlines (they're not meaningful structurally)
+    abc_text = abc_text.replace('\n', ' ')
+    abc_text = re.sub(r'\s+', ' ', abc_text).strip()
+
+    # 3. Split based on barlines
+    bars = re.split(Barline_regexPattern, abc_text)
+    bars = [bar.strip() for bar in bars if bar.strip() != '']  # Remove empty segments
+    bars = [bars[0]] + [bars[i] for i in range(1, len(bars)) if bars[i] != bars[i - 1]]  # Remove consecutive duplicates
+
+    # 4. Handle prefix (e.g., [K:C]) at the beginning
+    prefix = ''
     if bars[0] in Barlines:
         bar_content_start_id = 1
     elif remove_square_bracket_information_field(bars[0]).strip() == '':
@@ -470,24 +481,28 @@ def split_into_bars_and_barlines(abc_text: str):
     else:
         bar_content_start_id = 0
 
+    # 5. Preprocess potential bar-related affixes
     j = bar_content_start_id
     while j < len(bars):
-        bars[j] = bars[j].strip().replace('\n', '')  # strip，去掉\n
-        # 如果以数字或冒号开头，则提取数字之后的字符串，直到非数字/,/./-出现，把它加到上一个小节线的末尾
-        if re.match(r'\d', bars[j]) or bars[j][0] == ':':
+        bars[j] = bars[j].strip()
+        # If the bar content starts with digits or colons, attach them to the previous barline
+        if bars[j] and (re.match(r'\d', bars[j]) or bars[j][0] == ':'):
             k = 0
             for k in range(len(bars[j])):
-                if not bars[j][k] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '.', '-', ':']:
+                if bars[j][k] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '.', '-', ':']:
                     break
+            else:
+                k += 1
             affix = bars[j][:k]
             bars[j] = bars[j][k:].strip()
             bars[j - 1] = bars[j - 1] + affix
         j += 2
 
-    # Fix: Ensure bars has odd length to prevent IndexError in right_barlines extraction
+    # 6. Ensure even length to allow clean triplets of left_barline, bar_text, right_barline
     if len(bars) % 2 == 0:
-        bars.append('|')
+        bars.append('|')  # Add dummy right barline
 
+    # 7. Parse into left_barlines, bar_texts, right_barlines
     if bars[0] in Barlines:
         left_barlines = [bars[i * 2] for i in range(len(bars) // 2)]
         bar_texts = [bars[i * 2 + 1] for i in range(len(bars) // 2)]
@@ -501,10 +516,68 @@ def split_into_bars_and_barlines(abc_text: str):
         bar_texts = [bars[i * 2 + 2] for i in range(len(bars) // 2 - 1)]
         right_barlines = [bars[i * 2 + 3] for i in range(len(bars) // 2 - 1)]
 
+    # 8. Consistency check
     if not (len(left_barlines) == len(bar_texts) == len(right_barlines)):
         raise Exception('Unequal bar elements')
 
     return prefix, left_barlines, bar_texts, right_barlines
+
+
+# Below is the original code from abctoolkit 0.0.6
+#
+# def split_into_bars_and_barlines(abc_text: str):
+#     '''
+#     Split a voice text into bars / left_barlines / right_barlines
+#     '''
+
+#     bars = re.split(Barline_regexPattern, abc_text.strip())
+#     bars = [bar for bar in bars if bar.strip() != '']  # remove empty strings
+#     bars = [bars[0]] + [bars[i] for i in range(1, len(bars)) if bars[i] != bars[i - 1]]  # 防止出现连续小节线的情况
+
+#     prefix = ''  # 前缀，用来容纳最开头的[K:]这种
+#     if bars[0] in Barlines:
+#         bar_content_start_id = 1
+#     elif remove_square_bracket_information_field(bars[0]).strip() == '':
+#         bar_content_start_id = 2
+#         prefix = bars[0].strip()
+#     else:
+#         bar_content_start_id = 0
+
+#     j = bar_content_start_id
+#     while j < len(bars):
+#         bars[j] = bars[j].strip().replace('\n', '')  # strip，去掉\n
+#         # 如果以数字或冒号开头，则提取数字之后的字符串，直到非数字/,/./-出现，把它加到上一个小节线的末尾
+#         if re.match(r'\d', bars[j]) or bars[j][0] == ':':
+#             k = 0
+#             for k in range(len(bars[j])):
+#                 if not bars[j][k] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '.', '-', ':']:
+#                     break
+#             affix = bars[j][:k]
+#             bars[j] = bars[j][k:].strip()
+#             bars[j - 1] = bars[j - 1] + affix
+#         j += 2
+
+#     # Fix: Ensure bars has odd length to prevent IndexError in right_barlines extraction
+#     if len(bars) % 2 == 0:
+#         bars.append('|')
+
+#     if bars[0] in Barlines:
+#         left_barlines = [bars[i * 2] for i in range(len(bars) // 2)]
+#         bar_texts = [bars[i * 2 + 1] for i in range(len(bars) // 2)]
+#         right_barlines = [bars[i * 2 + 2] for i in range(len(bars) // 2)]
+#     elif prefix == '':
+#         left_barlines = [''] + [bars[i * 2 + 1] for i in range(len(bars) // 2 - 1)]
+#         bar_texts = [bars[i * 2] for i in range(len(bars) // 2)]
+#         right_barlines = [bars[i * 2 + 1] for i in range(len(bars) // 2)]
+#     else:
+#         left_barlines = [bars[i * 2 + 1] for i in range(len(bars) // 2 - 1)]
+#         bar_texts = [bars[i * 2 + 2] for i in range(len(bars) // 2 - 1)]
+#         right_barlines = [bars[i * 2 + 3] for i in range(len(bars) // 2 - 1)]
+
+#     if not (len(left_barlines) == len(bar_texts) == len(right_barlines)):
+#         raise Exception('Unequal bar elements')
+
+#     return prefix, left_barlines, bar_texts, right_barlines
 
 
 def strip_empty_bars(abc_lines: list):
