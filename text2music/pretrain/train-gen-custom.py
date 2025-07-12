@@ -152,6 +152,8 @@ class NotaGenDataset(Dataset):
             plan = get_text_from_pkl(pkl_path, pitch_shift=0)
             # Encode the plan text
             file_plan = patchilizer.encode_plan(plan)
+        else:
+            file_plan = patchilizer.encode_plan("")
         
         file_bytes = patchilizer.encode_train(abc_text)
         file_masks = [1] * len(file_bytes)
