@@ -45,9 +45,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# pyproject.toml
-pyproject.toml
-
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -80,3 +77,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Artifacts folder
+artifacts/*
