@@ -1,0 +1,74 @@
+from glob import glob
+from tqdm import tqdm
+import os
+import pickle
+import json
+import numpy as np
+import random
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+dirs = [
+    "/import/c4dm-datasets/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
+    "/import/c4dm-datasets/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
+    "/import/c4dm-datasets/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
+    "/import/c4dm-datasets/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+]
+
+files = []
+for d in dirs:
+    files.extend(glob(f"{d}/**/*.abci", recursive=True))
+
+# # Extract filenames starting from the last folder in the directory
+# relative_files = [os.path.relpath(file, start=os.path.dirname(d)) for d in dirs for file in glob(f"{d}/**/*.abci", recursive=True)]
+# # Example of how the relative paths look
+# print("Example relative paths:")
+# print(relative_files[:5])
+
+# Create train and val sets
+random.shuffle(files)
+n_val_files = 1000
+train_files = files[:-n_val_files]
+val_files = files[-n_val_files:]
+print(f"Number of train files: {len(train_files)}")
+print(f"Number of validation files: {len(val_files)}")
+
+# Read abci file and get key which is usually given in the header as K:E
+# The header is usually the first couple of lines
+def read_abci_file(file_path):
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+    key = None
+    for line in lines:
+        if line.startswith("K:"):
+            key = line.split(":")[1].strip()
+            break
+    return key
+
+
+def create_jsonl_with_keys(files, output_path):
+    """
+    Creates a JSONL file where each line is a JSON object with 'path' and 'key'.
+    
+    Args:
+        files (list): List of file paths to process.
+        output_path (str): Output path for the .jsonl file.
+    """
+    with open(output_path, 'w', encoding='utf-8') as f_out:
+        for file in tqdm(files, desc="Processing files"):
+            key = read_abci_file(file)
+            entry = {
+                "path": file,
+                "key": key if key else "None"
+            }
+            json_line = json.dumps(entry)
+            f_out.write(json_line + '\n')
+
+# Main function to create the JSON file
+def main():
+
+    create_jsonl_with_keys(val_files, "validation.jsonl")
+    create_jsonl_with_keys(train_files, "train.jsonl")
+
+if __name__ == "__main__":
+    main()
+    print("JSON file with keys created successfully.")

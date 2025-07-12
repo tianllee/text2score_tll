@@ -1,5 +1,0 @@
-raw_data:
-  pop909: /import/c4dm-datasets-ext/POP909
-
-data_prep:
-  pop909: /text2music/data

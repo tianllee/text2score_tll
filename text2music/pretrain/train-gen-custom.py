@@ -6,14 +6,16 @@ import json
 import wandb
 import torch
 import random
+import pickle
 import numpy as np
 from utils import *
 from config import *
+from text2music.data.utils.xml2plan import get_text_from_pkl
 from tqdm import tqdm
 from copy import deepcopy
 from torch.cuda.amp import autocast, GradScaler
 from torch.utils.data import Dataset, DataLoader
-from transformers import GPT2Config, LlamaConfig, get_scheduler, get_constant_schedule_with_warmup
+from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_warmup
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -138,15 +140,18 @@ class NotaGenDataset(Dataset):
     def __getitem__(self, idx):
 
         filepath = self.filenames[idx]['path']
-
-        key = random.choice(['C#', 'F#', 'B', 'E', 'A', 'D', 'G', 'C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'])
-
-        folder = os.path.dirname(filepath)
-        name = os.path.split(filepath)[-1]
-        des_filepath = os.path.join(folder, key, name + '_' + key + '.abc')
         
-        with open(des_filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             abc_text = f.read()
+
+        pkl_path = filepath.replace('.abci', '.pkl')
+        if os.path.exists(pkl_path):
+            with open(pkl_path, 'rb') as f:
+                plan = pickle.load(f)
+        
+            plan = get_text_from_pkl(pkl_path, pitch_shift=0)
+            # Encode the plan text
+            file_plan = patchilizer.encode_plan(plan)
         
         file_bytes = patchilizer.encode_train(abc_text)
         file_masks = [1] * len(file_bytes)
@@ -154,11 +159,11 @@ class NotaGenDataset(Dataset):
         file_bytes = torch.tensor(file_bytes, dtype=torch.long)
         file_masks = torch.tensor(file_masks, dtype=torch.long)
         
-        return file_bytes, file_masks
+        return file_bytes, file_plan, file_masks
 
-def process_one_batch(batch):
+def process_one_batch(batch, plan=None):
     input_patches, input_masks = batch
-    loss = model(input_patches, input_masks).loss
+    loss = model(plan, input_patches, input_masks).loss
 
     # Reduce the loss on GPU 0
     if world_size > 1:
@@ -179,10 +184,10 @@ def train_epoch(epoch):
     train_steps = (epoch-1)*len(train_set)
 
     for batch in tqdm_train_set:
-        minibatches = split_into_minibatches(batch[0], batch[1], BATCH_SIZE//ACCUMULATION_STEPS)
+        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE//ACCUMULATION_STEPS)
         for minibatch in minibatches:
             with autocast():
-                loss = process_one_batch(minibatch) / ACCUMULATION_STEPS
+                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
             scaler.scale(loss).backward()
             total_train_loss += loss.item()
         scaler.step(optimizer)
@@ -213,10 +218,10 @@ def eval_epoch():
   
     # Evaluate data for one epoch
     for batch in tqdm_eval_set: 
-        minibatches = split_into_minibatches(batch[0], batch[1], BATCH_SIZE//ACCUMULATION_STEPS)
+        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE//ACCUMULATION_STEPS)
         for minibatch in minibatches:
             with torch.no_grad():
-                loss = process_one_batch(minibatch) / ACCUMULATION_STEPS
+                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
             total_eval_loss += loss.item()
         tqdm_eval_set.set_postfix({str(global_rank)+'_eval_loss': total_eval_loss / iter_idx})
         iter_idx += 1

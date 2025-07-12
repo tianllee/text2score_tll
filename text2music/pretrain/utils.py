@@ -18,6 +18,7 @@ class Patchilizer:
         self.bos_token_id = 1
         self.eos_token_id = 2
         self.special_token_id = 0
+        self.encoder_tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
 
     def split_bars(self, body_lines):
         """
@@ -88,6 +89,14 @@ class Patchilizer:
        
         return tunebody_patches
 
+    def encode_plan(self, plan):
+        """
+        Encode a plan into a sequence of tokens.
+        """
+        plan = self.encoder_tokenizer(plan, return_tensors="pt", padding=True, truncation=True).input_ids
+        plan = plan.squeeze(0)
+        return plan
+        
     def encode_train(self, abc_text, patch_length=PATCH_LENGTH, patch_size=PATCH_SIZE, add_special_patches=True, cut=True):
 
         lines = abc_text.split('\n')

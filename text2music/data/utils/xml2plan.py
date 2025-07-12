@@ -665,13 +665,31 @@ def get_consecutive_measures(full_plan, top_priority_measures):
     return consecutive_measures
 
 
-def convert_measures_to_text(data, all_instruments):
+def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
     key_mode_map = {1: "minor", 0: "major"}
     lines = []
 
     # Add header with all instruments
     lines.append("Instruments: " + ", ".join(all_instruments))
     lines.append("")
+
+    # Iterate through data.items() and add pitch shift to pitch range, key signature, and chords
+    for measure, details in data.items():
+        # Adjust pitch range with pitch shift
+        if details['pitch_range']['min'] is not None:
+            details['pitch_range']['min'] += pitch_shift
+        if details['pitch_range']['max'] is not None:
+            details['pitch_range']['max'] += pitch_shift
+        
+        # Adjust key signature with pitch shift
+        if details['key_signature'] is not None:
+            details['key_signature'] += pitch_shift
+        
+        # Adjust chords with pitch shift
+        if details['chords']:
+            chords = [i + pitch_shift for chord in details['chords'] for i in chord]
+            details['chords'] = chords
+            
 
     for measure, details in data.items():
         lines.append(f"{measure}:")
@@ -706,7 +724,7 @@ def get_full_plan_pipeline(musicxml_file: str):
     full_plan = get_full_plan(combined_data)
     return full_plan
 
-def get_text_from_xml(musicxml_file: str):
+def get_text_from_xml(musicxml_file: str, pitch_shift: int = 0):
     """
     Extracts text representation from a MusicXML file.
 
@@ -721,12 +739,30 @@ def get_text_from_xml(musicxml_file: str):
     full_plan = get_full_plan(combined_data)
     top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=5)
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
-    return convert_measures_to_text(consecutive_measures, all_instruments)
+    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
+
+def get_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
+    """
+    Extracts text representation from a pickled full plan file.
+
+    Args:
+        pkl_file: The path to the pickled full plan file.
+
+    Returns:
+        A string containing the text representation of the measures.
+    """
+    import pickle
+    with open(pkl_file, 'rb') as f:
+        full_plan = pickle.load(f)
+    
+    top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=5)
+    consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
+    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
 
 
 if __name__ == "__main__":
     # Example usage
-    musicxml_file = "/homes/kb658/NotaGen/data/schubert_xml/FS_837_osl.xml"
+    musicxml_file = "path_to_file.xml" # Replace with your MusicXML file path
     text = get_text_from_xml(musicxml_file)
     print(text)
 
