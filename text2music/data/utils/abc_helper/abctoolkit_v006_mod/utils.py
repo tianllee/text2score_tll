@@ -173,9 +173,7 @@ def extract_barline_and_bartext_dict_rotated(abc_lines: list):
                     if re.match(r'\d', bar_eles[2]) or bar_eles[2][0] == ':':
                         k = 0
                         for k in range(len(bar_eles[2])):
-                            if not bar_eles[2][k] in [
-                                    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '.', '-', ':'
-                            ]:
+                            if not bar_eles[2][k] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '.', '-', ':']:
                                 break
                         affix = bar_eles[2][:k]
                         bar_eles[2] = bar_eles[2][k:].strip()
@@ -707,9 +705,8 @@ def strip_empty_voices(abc_lines):
         sub_symbol: right_barline_dict[ori_symbol] for ori_symbol, sub_symbol in substitute_dict.items()
     }
 
-    altered_abc_lines = merge_barline_and_bartext_dict(altered_metadata_lines, altered_prefix_dict,
-                                                       altered_left_barline_dict, altered_bar_text_dict,
-                                                       altered_right_barline_dict)
+    altered_abc_lines = merge_barline_and_bartext_dict(altered_metadata_lines, altered_prefix_dict, altered_left_barline_dict,
+                                                       altered_bar_text_dict, altered_right_barline_dict)
 
     return altered_abc_lines
 
@@ -902,15 +899,15 @@ def add_tokens(meta_data, merged_body_data):
 if __name__ == '__main__':
 
     abc_lines = [
-        '%%score { ( 1 4 ) | ( 2 3 ) }\n', 'L:1/8\n', 'Q:1/4=92\n', 'M:2/4\n', 'K:Cb\n',
-        'V:1 treble nm="Piano" snm="Pno."\n', 'V:4 treble \n', 'V:2 bass \n', 'V:3 bass\n',
-        '[V:1]"^Andante cantabile"!p! G2|[V:2]z2|[V:3]x2|[V:4]x2|\n', '[V:1]G2 EE|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
-        '[V:1]F2 DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n', '[V:1]E2 G2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
-        '[V:1]E2 z!<(! G|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]G2!<)! E!>(!E|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
-        '[V:1]F2!>)! DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n', '[V:1]E2 G2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
-        '[V:1]E2 z2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]E2 DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n',
-        '[V:1]F2 DD|[V:2]C,4|[V:3]C,F,A,F,|[V:4]x4|\n', '[V:1]E2 DD|[V:2]C,4|[V:3]C,F,A,F,|[V:4]x4|\n',
-        '[V:1]C2 z2|[V:2]C,4|[V:3]C,E,G,E,|[V:4]x4|\n', '[V:1]!<(! E2 DD|[V:2][C,G,]2 [C,F,][C,F,]|[V:3]x4|[V:4]x4|\n',
+        '%%score { ( 1 4 ) | ( 2 3 ) }\n', 'L:1/8\n', 'Q:1/4=92\n', 'M:2/4\n', 'K:Cb\n', 'V:1 treble nm="Piano" snm="Pno."\n',
+        'V:4 treble \n', 'V:2 bass \n', 'V:3 bass\n', '[V:1]"^Andante cantabile"!p! G2|[V:2]z2|[V:3]x2|[V:4]x2|\n',
+        '[V:1]G2 EE|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]F2 DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n',
+        '[V:1]E2 G2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]E2 z!<(! G|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
+        '[V:1]G2!<)! E!>(!E|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]F2!>)! DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n',
+        '[V:1]E2 G2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n', '[V:1]E2 z2|[V:2]C,4|[V:3]C,G,CG,|[V:4]x4|\n',
+        '[V:1]E2 DD|[V:2]C,4|[V:3]C,G,B,G,|[V:4]x4|\n', '[V:1]F2 DD|[V:2]C,4|[V:3]C,F,A,F,|[V:4]x4|\n',
+        '[V:1]E2 DD|[V:2]C,4|[V:3]C,F,A,F,|[V:4]x4|\n', '[V:1]C2 z2|[V:2]C,4|[V:3]C,E,G,E,|[V:4]x4|\n',
+        '[V:1]!<(! E2 DD|[V:2][C,G,]2 [C,F,][C,F,]|[V:3]x4|[V:4]x4|\n',
         '[V:1]F2!<)!!>(! DD!>)!|[V:2][C,A,]2 [C,F,][C,F,]|[V:3]x4|[V:4]x4|\n',
         '[V:1]!<(! E2 DD|[V:2][C,G,]2 [C,F,][C,F,]|[V:3]x4|[V:4]x4|\n',
         '[V:1]C2 !fermata!z2!<)!|][V:2][C,E,]2 !fermata!z2|][V:3]x4|][V:4]x4|]\n'
