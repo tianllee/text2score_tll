@@ -149,7 +149,7 @@ class NotaGenDataset(Dataset):
     def __len__(self):
         return len(self.filenames)
 
-    def __getitem__(self, idx, transpose_offset=0):
+    def __getitem__(self, idx):
 
         filepath = self.filenames[idx]['path']
 
