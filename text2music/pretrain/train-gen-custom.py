@@ -283,11 +283,13 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set,
                            batch_size=batch_size,
                            collate_fn=collate_batch,
+                           num_workers=6,
                            sampler=train_sampler,
                            shuffle=(train_sampler is None))
     eval_set = DataLoader(eval_set,
                           batch_size=batch_size,
                           collate_fn=collate_batch,
+                          num_workers=6,
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 
