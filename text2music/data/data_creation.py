@@ -7,6 +7,9 @@ import numpy as np
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+DATA_ROOT_DIR = "/import/c4dm-datasets/ABC_Dataset"
+
+
 dirs = [
     "/import/c4dm-datasets/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
     "/import/c4dm-datasets/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
@@ -56,8 +59,9 @@ def create_jsonl_with_keys(files, output_path):
     with open(output_path, 'w', encoding='utf-8') as f_out:
         for file in tqdm(files, desc="Processing files"):
             key = read_abci_file(file)
+            rel_path = os.path.relpath(file, start=os.path.dirname("/import/c4dm-datasets/ABC_Dataset/"))
             entry = {
-                "path": file,
+                "path": rel_path,
                 "key": key if key else "None"
             }
             json_line = json.dumps(entry)
