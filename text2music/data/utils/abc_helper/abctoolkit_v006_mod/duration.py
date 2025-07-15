@@ -1,6 +1,6 @@
 import re
 from fractions import Fraction
-from utils.abc_helper.abctoolkit_v006_mod.utils import SquareBracket_re, remove_square_bracket_information_field, remove_wrapped_content
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import SquareBracket_re, remove_square_bracket_information_field, remove_wrapped_content
 
 
 def calculate_single_note_duration(note_text: str):

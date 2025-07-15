@@ -5,9 +5,8 @@ import json
 import re
 import numpy as np
 from config import *
-from transformers import GPT2Model, GPT2LMHeadModel, LlamaModel, LlamaForCausalLM, PreTrainedModel
+from transformers import GPT2Model, GPT2LMHeadModel, PreTrainedModel, AutoTokenizer, ModernBertForMaskedLM
 from samplings import top_p_sampling, top_k_sampling, temperature_sampling
-from tokenizers import Tokenizer
 
 
 class Patchilizer:

@@ -117,11 +117,12 @@ def clear_unused_tensors():
 
 def collate_batch(input_batches):
 
-    input_patches, input_masks = zip(*input_batches)
+    input_patches, input_plan, input_masks = zip(*input_batches)
     input_patches = torch.nn.utils.rnn.pad_sequence(input_patches, batch_first=True, padding_value=0)
+    input_plan = torch.nn.utils.rnn.pad_sequence(input_plan, batch_first=True, padding_value=0)
     input_masks = torch.nn.utils.rnn.pad_sequence(input_masks, batch_first=True, padding_value=0)
 
-    return input_patches.to(device), input_masks.to(device)
+    return input_patches.to(device), input_plan.to(device), input_masks.to(device)
 
 
 def split_into_minibatches(input_patches, input_masks, minibatch_size):
@@ -136,7 +137,7 @@ def split_into_minibatches(input_patches, input_masks, minibatch_size):
 
 class NotaGenDataset(Dataset):
 
-    def __init__(self, filenames, pitch_shift_range=(0, 0)):
+    def __init__(self, filenames, data_root, pitch_shift_range=(0, 0)):
         """
         Args:
             filenames (list): List of dictionaries containing file paths and other metadata.
@@ -145,6 +146,7 @@ class NotaGenDataset(Dataset):
         """
         self.filenames = filenames
         self.pitch_shift_range = pitch_shift_range
+        self.data_root = data_root
 
     def __len__(self):
         return len(self.filenames)
@@ -152,6 +154,7 @@ class NotaGenDataset(Dataset):
     def __getitem__(self, idx):
 
         filepath = self.filenames[idx]['path']
+        filepath = os.path.join(self.data_root, filepath)
 
         pitch_shift = 0 if self.pitch_shift_range == (0, 0) else random.randint(*self.pitch_shift_range)
         abc_text = read_abci_with_pitch_shift(filepath, pitch_shift=pitch_shift)  # 10 ms
@@ -274,8 +277,8 @@ if __name__ == "__main__":
     train_files = train_files[:train_batch_nums * batch_size]
     eval_files = eval_files[:eval_batch_nums * batch_size]
 
-    train_set = NotaGenDataset(train_files)
-    eval_set = NotaGenDataset(eval_files)
+    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(-5, 5))
+    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(-5, 5))
 
     train_sampler = DistributedSampler(train_set, num_replicas=world_size, rank=local_rank)
     eval_sampler = DistributedSampler(eval_set, num_replicas=world_size, rank=local_rank)
@@ -283,13 +286,11 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set,
                            batch_size=batch_size,
                            collate_fn=collate_batch,
-                           num_workers=6,
                            sampler=train_sampler,
                            shuffle=(train_sampler is None))
     eval_set = DataLoader(eval_set,
                           batch_size=batch_size,
                           collate_fn=collate_batch,
-                          num_workers=6,
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 

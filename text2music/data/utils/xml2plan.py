@@ -687,7 +687,7 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
         
         # Adjust chords with pitch shift
         if details['chords']:
-            chords = [i + pitch_shift for chord in details['chords'] for i in chord]
+            chords = [[i + pitch_shift for i in chord] for chord in details['chords']]
             details['chords'] = chords
             
 

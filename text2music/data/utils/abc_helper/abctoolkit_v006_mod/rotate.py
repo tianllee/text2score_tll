@@ -1,6 +1,6 @@
 import os
-from utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc, extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated
-from utils.abc_helper.abctoolkit_v006_mod.check import check_alignment_unrotated
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc, extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.check import check_alignment_unrotated
 
 
 def rotate_abc(abc_lines: list):

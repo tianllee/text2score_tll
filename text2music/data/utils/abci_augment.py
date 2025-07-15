@@ -1,8 +1,8 @@
 import os
 from copy import deepcopy
-from utils.abc_helper.abctoolkit_v006_mod.transpose_mod import transpose_to_abc_lines_with_offset
-from utils.abc_helper.abctoolkit_v006_mod.rotate import rotate_abc, unrotate_abc
-from utils.abci_diff import abci_diff
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose_mod import transpose_to_abc_lines_with_offset
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.rotate import rotate_abc, unrotate_abc
+from text2music.data.utils.abci_diff import abci_diff
 
 
 def transpose_abci_lines_with_offset(abci_lines, key_offset):

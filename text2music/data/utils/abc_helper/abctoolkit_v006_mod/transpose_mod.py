@@ -8,7 +8,7 @@ import random
 import math
 from tqdm import trange
 from multiprocessing import Pool
-from utils.abc_helper.abctoolkit_v006_mod.utils import extract_metadata_and_parts, extract_global_and_local_metadata, find_all_abc
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import extract_metadata_and_parts, extract_global_and_local_metadata, find_all_abc
 
 Key_list = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 Note_list = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'c', 'd', 'e', 'f', 'g', 'a', 'b']

@@ -1,5 +1,5 @@
-from utils.abc_helper.abctoolkit_v006_mod.utils import extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated, fast_ld_sim
-from utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import extract_barline_and_bartext_dict, extract_barline_and_bartext_dict_rotated, fast_ld_sim
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
 
 
 def check_alignment_according_to_barline_and_bartext_dict(left_barline_dict, bar_text_dict, right_barline_dict):

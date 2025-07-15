@@ -1,12 +1,13 @@
 import os
 
 # Configuration for the data
-DATA_TRAIN_INDEX_PATH = "" 
-DATA_EVAL_INDEX_PATH  = ""
+DATA_TRAIN_INDEX_PATH = "text2music/data/train.jsonl" 
+DATA_EVAL_INDEX_PATH  = "text2music/data/validation.jsonl"
+DATA_ROOT = "/import/c4dm-datasets/ABC_Dataset/"               # Root directory for the data
 
 # Configuration for the model
 PATCH_STREAM = True
-PATCH_SIZE = 16                                                # Patch Size
+PATCH_SIZE = 16                                                 # Patch Size
 PATCH_LENGTH = 2048                                             # Patch Length
 CHAR_NUM_LAYERS = 3                                             # Number of layers in the decoder
 PATCH_NUM_LAYERS = 12                                           # Number of layers in the encoder

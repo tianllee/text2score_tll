@@ -1,7 +1,7 @@
 import os
 import math
-from utils.abc_helper.abctoolkit_v006_mod.transpose import transpose_an_abc_text
-from utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import transpose_an_abc_text
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import find_all_abc
 from multiprocessing import Pool
 from tqdm import tqdm
 
