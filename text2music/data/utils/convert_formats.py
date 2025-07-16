@@ -62,7 +62,8 @@ def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = No
 
     # xml --> abc
     try:
-        cmd = f'python utils/abc_helper/xml2abc.py -d 8 -x "{input_file}"'
+        cmd = f'python utils/abc_helper/xml2abc_mod.py -d 8 -x "{input_file}"'
+        # cmd = f'python utils/abc_helper/xml2abc.py -d 8 -x "{input_file}"'
         # p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         # result = p.communicate()
         # abc_output = result[0].decode('ucmdtf-8')
