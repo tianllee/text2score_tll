@@ -30,15 +30,15 @@ dirs = [
 files = []
 for d in dirs:
     files.extend(glob(f"{d}/**/*.xml", recursive=True))
-    files.extend(glob(f"{d}/**/*.mxl", recursive=True))
+    # files.extend(glob(f"{d}/**/*.mxl", recursive=True))
 
 # files = files[:5]  # Limit to first 5 files for testing
 
 def process_file(file):
-    if file.endswith(".mxl"):
-        json_path = file.replace(".mxl", ".json")
-        pkl_path = file.replace(".mxl", ".pkl")
-    elif file.endswith(".xml"):
+    # if file.endswith(".mxl"):
+        # json_path = file.replace(".mxl", ".json")
+        # pkl_path = file.replace(".mxl", ".pkl")
+    if file.endswith(".xml"):
         json_path = file.replace(".xml", ".json")
         pkl_path = file.replace(".xml", ".pkl")
     else:

@@ -15,17 +15,12 @@ dirs = [
     "/import/c4dm-datasets/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
     "/import/c4dm-datasets/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
     "/import/c4dm-datasets/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+    "/import/c4dm-datasets/ABC_Dataset/ASAP_MXL_abci"
 ]
 
 files = []
 for d in dirs:
     files.extend(glob(f"{d}/**/*.abci", recursive=True))
-
-# # Extract filenames starting from the last folder in the directory
-# relative_files = [os.path.relpath(file, start=os.path.dirname(d)) for d in dirs for file in glob(f"{d}/**/*.abci", recursive=True)]
-# # Example of how the relative paths look
-# print("Example relative paths:")
-# print(relative_files[:5])
 
 # Create train and val sets
 random.shuffle(files)
