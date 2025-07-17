@@ -20,6 +20,7 @@ from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_w
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
+import torch.multiprocessing as mp
 
 # Set up distributed training
 world_size = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
@@ -61,9 +62,6 @@ char_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
 
 # model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
 model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
-# print parameter number of model
-print("Custom Model Parameter Number: " + str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
-
 model = model.to(device)
 
 # print parameter number
@@ -122,7 +120,7 @@ def collate_batch(input_batches):
     input_plan = torch.nn.utils.rnn.pad_sequence(input_plan, batch_first=True, padding_value=0)
     input_masks = torch.nn.utils.rnn.pad_sequence(input_masks, batch_first=True, padding_value=0)
 
-    return input_patches.to(device), input_plan.to(device), input_masks.to(device)
+    return input_patches, input_plan, input_masks
 
 
 def split_into_minibatches(input_patches, input_masks, minibatch_size):
@@ -183,6 +181,14 @@ def process_one_batch(batch, plan=None):
     input_patches, input_masks = batch
     loss = model(plan, input_patches, input_masks).loss
 
+    # If loss is nan, print plan, input_patches, and input_masks
+    if torch.isnan(loss):
+        print("Loss is NaN!")
+        print("Plan:", plan)
+        print("Input Patches:", input_patches)
+        print("Input Masks:", input_masks)
+        raise ValueError("Loss is NaN")
+
     # Reduce the loss on GPU 0
     if world_size > 1:
         loss = loss.unsqueeze(0)
@@ -202,10 +208,11 @@ def train_epoch(epoch):
     train_steps = (epoch - 1) * len(train_set)
 
     for batch in tqdm_train_set:
-        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE // ACCUMULATION_STEPS)
+        input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
+        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
         for minibatch in minibatches:
             with autocast():
-                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
+                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
             scaler.scale(loss).backward()
             total_train_loss += loss.item()
         scaler.step(optimizer)
@@ -237,10 +244,11 @@ def eval_epoch():
 
     # Evaluate data for one epoch
     for batch in tqdm_eval_set:
-        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE // ACCUMULATION_STEPS)
+        input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
+        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
         for minibatch in minibatches:
             with torch.no_grad():
-                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
+                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
             total_eval_loss += loss.item()
         tqdm_eval_set.set_postfix({str(global_rank) + '_eval_loss': total_eval_loss / iter_idx})
         iter_idx += 1
@@ -249,6 +257,7 @@ def eval_epoch():
 
 # train and eval
 if __name__ == "__main__":
+    # mp.set_start_method('spawn', force=True)
 
     # Initialize wandb
     if WANDB_LOGGING and global_rank == 0:
@@ -261,6 +270,9 @@ if __name__ == "__main__":
         train_files = []
         for line in f:
             train_files.append(json.loads(line))
+
+    # Tmp: remove files which contain symphony
+    # train_files = [file for file in train_files if 'SymphonyNet' not in file['path']]
 
     with open(DATA_EVAL_INDEX_PATH, "r", encoding="utf-8") as f:
         print("Loading Data...")
@@ -277,7 +289,8 @@ if __name__ == "__main__":
     train_files = train_files[:train_batch_nums * batch_size]
     eval_files = eval_files[:eval_batch_nums * batch_size]
 
-    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(-5, 5))
+    # train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(-5, 5))
+    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(0, 0))
     eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(-5, 5))
 
     train_sampler = DistributedSampler(train_set, num_replicas=world_size, rank=local_rank)
@@ -286,11 +299,13 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set,
                            batch_size=batch_size,
                            collate_fn=collate_batch,
+                        #    num_workers=4,
                            sampler=train_sampler,
                            shuffle=(train_sampler is None))
     eval_set = DataLoader(eval_set,
                           batch_size=batch_size,
                           collate_fn=collate_batch,
+                        #   num_workers=4,
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 
