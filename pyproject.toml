@@ -14,10 +14,10 @@ license = {file = "LICENSE"}
 
 # Dependencies
 dependencies = [
-    "wandb==0.17.2",
+    "wandb",
     "samplings==0.1.7",
     "pyparsing==3.2.1",
-    "gradio==5.17.1",
+    "gradio",
     "partitura==1.6.0",
     "mido"
 ]
