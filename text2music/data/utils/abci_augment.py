@@ -3,6 +3,7 @@ from copy import deepcopy
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose_mod import transpose_to_abc_lines_with_offset
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.rotate import rotate_abc, unrotate_abc
 from text2music.data.utils.abci_diff import abci_diff
+from unidecode import unidecode
 
 
 def transpose_abci_lines_with_offset(abci_lines, key_offset):
@@ -21,7 +22,6 @@ def transpose_abci_lines_with_offset(abci_lines, key_offset):
     transposed_abci_lines = rotate_abc(transposed_abc_lines)
     return transposed_abci_lines
 
-
 def read_abci_with_pitch_shift(filepath, pitch_shift=0, return_lines=False):
     """
     Read an ABC interleaved file and apply a pitch shift (key transpose w/ offset).
@@ -38,6 +38,8 @@ def read_abci_with_pitch_shift(filepath, pitch_shift=0, return_lines=False):
 
     with open(filepath, 'r', encoding='utf-8') as f:
         abci_lines = f.readlines()
+    
+    abci_lines = [unidecode(line.strip()) for line in abci_lines if line.strip()]
 
     if pitch_shift == 0:
         if return_lines:

@@ -8,9 +8,9 @@ DATA_ROOT = "/import/c4dm-datasets/ABC_Dataset/"               # Root directory 
 # Configuration for the model
 PATCH_STREAM = True
 PATCH_SIZE = 16                                                 # Patch Size
-PATCH_LENGTH = 2048                                             # Patch Length
+PATCH_LENGTH = 512 #2048                                             # Patch Length
 CHAR_NUM_LAYERS = 3                                             # Number of layers in the decoder
-PATCH_NUM_LAYERS = 12                                           # Number of layers in the encoder
+PATCH_NUM_LAYERS = 4 #12                                           # Number of layers in the encoder
 HIDDEN_SIZE = 768                                               # Hidden Size
 
 # Configuration for the training
