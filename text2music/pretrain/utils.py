@@ -5,7 +5,7 @@ import json
 import re
 import numpy as np
 from config import *
-from transformers import GPT2Model, GPT2LMHeadModel, PreTrainedModel, AutoTokenizer, ModernBertForMaskedLM
+from transformers import GPT2Model, GPT2LMHeadModel, PreTrainedModel, AutoTokenizer, AutoModelForMaskedLM
 from samplings import top_p_sampling, top_k_sampling, temperature_sampling
 
 
@@ -237,6 +237,7 @@ class PatchLevelDecoder(PreTrainedModel):
         self.patch_embedding = torch.nn.Linear(PATCH_SIZE * 128, config.n_embd)
         torch.nn.init.normal_(self.patch_embedding.weight, std=0.02)
         self.base = GPT2Model(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
 
     def forward(self,
                 patches: torch.Tensor,
@@ -269,6 +270,7 @@ class CharLevelDecoder(PreTrainedModel):
         self.bos_token_id = 1
 
         self.base = GPT2LMHeadModel(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
 
     def forward(self,
                 encoded_patches: torch.Tensor,
@@ -367,6 +369,7 @@ class NotaGenLMHeadModel(PreTrainedModel):
         self.char_level_decoder = CharLevelDecoder(decoder_config)
 
     def forward(self,
+                plan: torch.Tensor,
                 patches: torch.Tensor,
                 masks: torch.Tensor):
         """
@@ -441,11 +444,19 @@ class PatchLevelEncoderDecoder(PreTrainedModel):
         config.add_cross_attention = True
         config.is_decoder = True
         self.base = GPT2Model(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
 
         # Patch-level encoder
-        self.patch_level_encoder = ModernBertForMaskedLM.from_pretrained("answerdotai/ModernBERT-base")
+        self.patch_level_encoder = AutoModelForMaskedLM.from_pretrained(
+            "answerdotai/ModernBERT-base",
+            torch_dtype=self.dtype,
+            attn_implementation="sdpa"
+        )
         # Freeze the patch-level encoder
-        self.patch_level_encoder.requires_grad_(False)
+        for param in self.patch_level_encoder.parameters():
+            param.requires_grad = False        
+        # Add a LayerNorm to stabilize the encoder's output
+        self.context_layernorm = torch.nn.LayerNorm(config.n_embd)
 
     def forward(self,
                 plan: torch.Tensor,
@@ -462,8 +473,16 @@ class PatchLevelEncoderDecoder(PreTrainedModel):
         patches = patches.reshape(len(patches), -1, PATCH_SIZE * (128))
         patches = self.patch_embedding(patches.to(self.device))
 
-        encoder_outputs = self.patch_level_encoder(input_ids=plan, output_hidden_states=True)
-        encoder_hidden_states = encoder_outputs.hidden_states[-1]  # Use the last hidden state as encoder hidden states
+        # We can keep the autocast disabled here as a safeguard, but the LayerNorm is the key fix.
+        with torch.amp.autocast('cuda', enabled=False):
+            encoder_outputs = self.patch_level_encoder(input_ids=plan.to(torch.long), output_hidden_states=True)
+            encoder_hidden_states = encoder_outputs.hidden_states[-1] 
+
+        # This normalizes the hidden states to have zero mean and unit variance.
+        # It's a trainable layer, so it will adapt to produce stable inputs for the decoder.
+        encoder_hidden_states = self.context_layernorm(encoder_hidden_states)        
+        encoder_hidden_states = encoder_hidden_states.to(self.device)
+
         if masks==None:
             return self.base(inputs_embeds=patches, encoder_hidden_states=encoder_hidden_states)
         else:

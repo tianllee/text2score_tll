@@ -14,7 +14,7 @@ from text2music.data.utils.xml2plan import get_text_from_pkl
 from text2music.data.utils.abci_augment import read_abci_with_pitch_shift
 from tqdm import tqdm
 from copy import deepcopy
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from torch.utils.data import Dataset, DataLoader
 from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_warmup
 import torch.distributed as dist
@@ -181,14 +181,6 @@ def process_one_batch(batch, plan=None):
     input_patches, input_masks = batch
     loss = model(plan, input_patches, input_masks).loss
 
-    # If loss is nan, print plan, input_patches, and input_masks
-    if torch.isnan(loss):
-        print("Loss is NaN!")
-        print("Plan:", plan)
-        print("Input Patches:", input_patches)
-        print("Input Masks:", input_masks)
-        raise ValueError("Loss is NaN")
-
     # Reduce the loss on GPU 0
     if world_size > 1:
         loss = loss.unsqueeze(0)
@@ -211,7 +203,7 @@ def train_epoch(epoch):
         input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
         minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
         for minibatch in minibatches:
-            with autocast():
+            with autocast("cuda"):
                 loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
             scaler.scale(loss).backward()
             total_train_loss += loss.item()
@@ -272,7 +264,7 @@ if __name__ == "__main__":
             train_files.append(json.loads(line))
 
     # Tmp: remove files which contain symphony
-    # train_files = [file for file in train_files if 'SymphonyNet' not in file['path']]
+    # train_files = [file for file in train_files if 'ABC_Notation_Dataset_MXL_abci' in file['path']]
 
     with open(DATA_EVAL_INDEX_PATH, "r", encoding="utf-8") as f:
         print("Loading Data...")
@@ -291,7 +283,7 @@ if __name__ == "__main__":
 
     # train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(-5, 5))
     train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(0, 0))
-    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(-5, 5))
+    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(0, 0))
 
     train_sampler = DistributedSampler(train_set, num_replicas=world_size, rank=local_rank)
     eval_sampler = DistributedSampler(eval_set, num_replicas=world_size, rank=local_rank)
@@ -299,13 +291,13 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set,
                            batch_size=batch_size,
                            collate_fn=collate_batch,
-                        #    num_workers=4,
+                           num_workers=4,
                            sampler=train_sampler,
                            shuffle=(train_sampler is None))
     eval_set = DataLoader(eval_set,
                           batch_size=batch_size,
                           collate_fn=collate_batch,
-                        #   num_workers=4,
+                          num_workers=4,
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 

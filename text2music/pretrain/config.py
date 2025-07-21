@@ -3,18 +3,18 @@ import os
 # Configuration for the data
 DATA_TRAIN_INDEX_PATH = "text2music/data/train.jsonl" 
 DATA_EVAL_INDEX_PATH  = "text2music/data/validation.jsonl"
-DATA_ROOT = "/import/c4dm-datasets/ABC_Dataset/"               # Root directory for the data
+DATA_ROOT = "/data/scratch/acw769/ABC_Dataset/"               # Root directory for the data
 
 # Configuration for the model
 PATCH_STREAM = True
-PATCH_SIZE = 16                                                 # Patch Size
-PATCH_LENGTH = 512 #2048                                             # Patch Length
+PATCH_SIZE = 32                                                 # Patch Size
+PATCH_LENGTH = 2048                                             # Patch Length
 CHAR_NUM_LAYERS = 3                                             # Number of layers in the decoder
-PATCH_NUM_LAYERS = 4 #12                                           # Number of layers in the encoder
+PATCH_NUM_LAYERS = 16                                           # Number of layers in the encoder
 HIDDEN_SIZE = 768                                               # Hidden Size
 
 # Configuration for the training
-BATCH_SIZE = 4         
+BATCH_SIZE = 8         
 LEARNING_RATE = 1e-4   
 NUM_EPOCHS = 128                                                 # Number of epochs to train for (if early stopping doesn't intervene)
 ACCUMULATION_STEPS = 1                                          # Accumulation steps to simulate large batch size
