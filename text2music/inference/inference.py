@@ -12,7 +12,7 @@ from abctoolkit.duration import calculate_bartext_duration
 Note_list = Note_list + ['z', 'x']
 
 if torch.cuda.is_available():
-    device = torch.device("cuda:1")
+    device = torch.device("cuda")
 else:
     device = torch.device("cpu")
 

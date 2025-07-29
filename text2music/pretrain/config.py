@@ -7,7 +7,7 @@ DATA_ROOT = "/data/scratch/acw769/ABC_Dataset/"               # Root directory f
 
 # Configuration for the model
 PATCH_STREAM = True
-PATCH_SIZE = 32                                                 # Patch Size
+PATCH_SIZE = 16                                                 # Patch Size
 PATCH_LENGTH = 2048                                             # Patch Length
 CHAR_NUM_LAYERS = 3                                             # Number of layers in the decoder
 PATCH_NUM_LAYERS = 16                                           # Number of layers in the encoder

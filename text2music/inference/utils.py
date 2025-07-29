@@ -5,9 +5,8 @@ import json
 import re
 import numpy as np
 from config import *
-from transformers import GPT2Model, GPT2LMHeadModel, LlamaModel, LlamaForCausalLM, PreTrainedModel
+from transformers import GPT2Model, GPT2LMHeadModel, PreTrainedModel, AutoTokenizer, AutoModelForMaskedLM
 from samplings import top_p_sampling, top_k_sampling, temperature_sampling
-from tokenizers import Tokenizer
 
 
 class Patchilizer:
@@ -18,6 +17,7 @@ class Patchilizer:
         self.bos_token_id = 1
         self.eos_token_id = 2
         self.special_token_id = 0
+        self.encoder_tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
 
     def split_bars(self, body_lines):
         """
@@ -38,7 +38,7 @@ class Patchilizer:
                     else:
                         new_line_bars = [line_bars[0]] + [line_bars[i] + line_bars[i + 1] for i in range(1, len(line_bars), 2)]
                     if 'V' not in new_line_bars[-1]:
-                        new_line_bars[-2] += new_line_bars[-1]  # 吸收最后一个 小节线+\n 的组合
+                        new_line_bars[-2] += new_line_bars[-1] 
                         new_line_bars = new_line_bars[:-1]
                 new_bars += new_line_bars
         except:
@@ -88,6 +88,14 @@ class Patchilizer:
        
         return tunebody_patches
 
+    def encode_plan(self, plan):
+        """
+        Encode a plan into a sequence of tokens.
+        """
+        plan = self.encoder_tokenizer(plan, return_tensors="pt", padding=True, truncation=True).input_ids
+        plan = plan.squeeze(0)
+        return plan
+        
     def encode_train(self, abc_text, patch_length=PATCH_LENGTH, patch_size=PATCH_SIZE, add_special_patches=True, cut=True):
 
         lines = abc_text.split('\n')
@@ -96,7 +104,7 @@ class Patchilizer:
 
         tunebody_index = -1
         for i, line in enumerate(lines):
-            if '[V:' in line:
+            if line.startswith('[V:'):
                 tunebody_index = i
                 break
 
@@ -105,7 +113,7 @@ class Patchilizer:
 
         if self.stream:
             tunebody_lines = ['[r:' + str(line_index) + '/' + str(len(tunebody_lines) - line_index - 1) + ']' + line for line_index, line in
-                                enumerate(tunebody_lines)]    
+                                enumerate(tunebody_lines)]    # [r:n/n]
 
         metadata_patches = self.patchilize_metadata(metadata_lines)
         tunebody_patches = self.patchilize_tunebody(tunebody_lines, encode_mode='train')
@@ -229,6 +237,7 @@ class PatchLevelDecoder(PreTrainedModel):
         self.patch_embedding = torch.nn.Linear(PATCH_SIZE * 128, config.n_embd)
         torch.nn.init.normal_(self.patch_embedding.weight, std=0.02)
         self.base = GPT2Model(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
 
     def forward(self,
                 patches: torch.Tensor,
@@ -261,6 +270,7 @@ class CharLevelDecoder(PreTrainedModel):
         self.bos_token_id = 1
 
         self.base = GPT2LMHeadModel(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
 
     def forward(self,
                 encoded_patches: torch.Tensor,
@@ -273,7 +283,6 @@ class CharLevelDecoder(PreTrainedModel):
         """
         # preparing the labels for model training
         target_patches = torch.cat((torch.ones_like(target_patches[:,0:1])*self.bos_token_id, target_patches), dim=1)
-        # print('target_patches shape:', target_patches.shape)
 
         target_masks = target_patches == self.special_token_id
         labels = target_patches.clone().masked_fill_(target_masks, -100)
@@ -301,20 +310,19 @@ class CharLevelDecoder(PreTrainedModel):
         output = self.base(inputs_embeds=inputs_embeds, 
                          attention_mask=target_masks,
                          labels=labels)
-                         # output_hidden_states=True=True)
 
         return output
 
     def generate(self,
-                 encoded_patch: torch.Tensor,   # [hidden_size]
-                 tokens: torch.Tensor): # [1]
+                 encoded_patch: torch.Tensor,
+                 tokens: torch.Tensor):
         """
         The generate function for generating a patch based on the encoded patch and already generated tokens.
         :param encoded_patch: the encoded patch
         :param tokens: already generated tokens in the patch
         :return: the probability distribution of next token
         """
-        encoded_patch = encoded_patch.reshape(1, 1, -1) # [1, 1, hidden_size]
+        encoded_patch = encoded_patch.reshape(1, 1, -1)
         tokens = tokens.reshape(1, -1)
 
         # Get input embeddings
@@ -361,6 +369,7 @@ class NotaGenLMHeadModel(PreTrainedModel):
         self.char_level_decoder = CharLevelDecoder(decoder_config)
 
     def forward(self,
+                plan: torch.Tensor,
                 patches: torch.Tensor,
                 masks: torch.Tensor):
         """
@@ -376,8 +385,8 @@ class NotaGenLMHeadModel(PreTrainedModel):
         masks[:, 0] = 0
         
         encoded_patches = encoded_patches[left_shift_masks == 1]
-        patches = patches[masks == 1]        
-
+        patches = patches[masks == 1]
+        
         return self.char_level_decoder(encoded_patches, patches)
         
     def generate(self,
@@ -400,8 +409,146 @@ class NotaGenLMHeadModel(PreTrainedModel):
         else:
             tokens =  torch.tensor([self.bos_token_id], device=self.device)
 
+        patches = patches.reshape(len(patches), -1, PATCH_SIZE)
+        encoded_patches = self.patch_level_decoder(patches)["last_hidden_state"]
+        generated_patch = []            
+
+        while True:
+            prob = self.char_level_decoder.generate(encoded_patches[0][-1], tokens).cpu().detach().numpy()
+            prob = safe_normalize_probs(prob)
+            prob = top_k_sampling(prob, top_k=top_k, return_probs=True)
+            prob = safe_normalize_probs(prob)
+            prob = top_p_sampling(prob, top_p=top_p, return_probs=True)
+            prob = safe_normalize_probs(prob)
+            token = temperature_sampling(prob, temperature=temperature)
+            char = chr(token)
+            generated_patch.append(token)
+
+            if len(tokens) >= PATCH_SIZE:
+                break
+            else:
+                tokens = torch.cat((tokens, torch.tensor([token], device=self.device)), dim=0)
+        
+        return generated_patch
+
+
+class PatchLevelEncoderDecoder(PreTrainedModel):
+    """
+    A Patch-level Decoder model for generating patch features in an auto-regressive manner. 
+    It inherits PreTrainedModel from transformers.
+    """
+    def __init__(self, config):
+        super().__init__(config)
+        self.patch_embedding = torch.nn.Linear(PATCH_SIZE * 128, config.n_embd)
+        torch.nn.init.normal_(self.patch_embedding.weight, std=0.02)
+        config.add_cross_attention = True
+        config.is_decoder = True
+        self.base = GPT2Model(config)
+        self.base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant":False})
+
+        # Patch-level encoder
+        self.patch_level_encoder = AutoModelForMaskedLM.from_pretrained(
+            "answerdotai/ModernBERT-base",
+            torch_dtype=self.dtype,
+            attn_implementation="sdpa"
+        )
+        # Freeze the patch-level encoder
+        for param in self.patch_level_encoder.parameters():
+            param.requires_grad = False        
+        # Add a LayerNorm to stabilize the encoder's output
+        self.context_layernorm = torch.nn.LayerNorm(config.n_embd)
+
+    def forward(self,
+                plan: torch.Tensor,
+                patches: torch.Tensor,
+                masks=None) -> torch.Tensor:
+        """
+        The forward pass of the patch-level decoder model.
+        :param patches: the patches to be encoded
+        :param masks: the decoder masks for the patches
+        :return: the encoded patches
+        """
+
+        patches = torch.nn.functional.one_hot(patches, num_classes=128).to(self.dtype)
+        patches = patches.reshape(len(patches), -1, PATCH_SIZE * (128))
+        patches = self.patch_embedding(patches.to(self.device))
+
+        # We can keep the autocast disabled here as a safeguard, but the LayerNorm is the key fix.
+        with torch.amp.autocast('cuda', enabled=False):
+            encoder_outputs = self.patch_level_encoder(input_ids=plan.to(torch.long), output_hidden_states=True)
+            encoder_hidden_states = encoder_outputs.hidden_states[-1] 
+
+        # This normalizes the hidden states to have zero mean and unit variance.
+        # It's a trainable layer, so it will adapt to produce stable inputs for the decoder.
+        encoder_hidden_states = self.context_layernorm(encoder_hidden_states)        
+        encoder_hidden_states = encoder_hidden_states.to(self.device)
+
+        if masks==None:
+            return self.base(inputs_embeds=patches, encoder_hidden_states=encoder_hidden_states)
+        else:
+            return self.base(inputs_embeds=patches, attention_mask=masks, encoder_hidden_states=encoder_hidden_states)
+
+
+class CustomLMHeadModel(PreTrainedModel):
+    """
+    NotaGen is a language model with a hierarchical structure.
+    It includes a patch-level decoder and a char-level decoder.
+    The patch-level decoder is used to generate patch features in an auto-regressive manner.
+    The char-level decoder is used to generate the chars within each patch in an auto-regressive manner.
+    It inherits PreTrainedModel from transformers.
+    """
+    def __init__(self, encoder_config, decoder_config):
+        super().__init__(encoder_config)
+        self.special_token_id = 0
+        self.bos_token_id = 1
+        self.eos_token_id = 2
+        self.patch_level_model = PatchLevelEncoderDecoder(encoder_config)
+        self.char_level_decoder = CharLevelDecoder(decoder_config)
+
+    def forward(self,
+                plan: str,
+                patches: torch.Tensor,
+                masks: torch.Tensor):
+        """
+        The forward pass of the bGPT model.
+        :param patches: the patches to be encoded
+        :param masks: the masks for the patches
+        :return: the decoded patches
+        """
+        patches = patches.reshape(len(patches), -1, PATCH_SIZE)
+        encoded_patches = self.patch_level_model(plan, patches, masks)["last_hidden_state"]
+        
+        left_shift_masks = masks * (masks.flip(1).cumsum(1).flip(1) > 1)
+        masks[:, 0] = 0
+        
+        encoded_patches = encoded_patches[left_shift_masks == 1]
+        patches = patches[masks == 1]        
+
+        return self.char_level_decoder(encoded_patches, patches)
+        
+    def generate(self,
+                 plan: str,
+                 patches: torch.Tensor,
+                 top_k=0,
+                 top_p=1,
+                 temperature=1.0):
+        """
+        The generate function for generating patches based on patches.
+        :param patches: the patches to be encoded
+        :param top_k: the top k for sampling
+        :param top_p: the top p for sampling
+        :param temperature: the temperature for sampling
+        :return: the generated patches
+        """
+        if patches.shape[-1] % PATCH_SIZE != 0:
+            tokens = patches[:,:,-(patches.shape[-1]%PATCH_SIZE):].squeeze(0, 1)
+            tokens = torch.cat((torch.tensor([self.bos_token_id], device=self.device), tokens), dim=-1)
+            patches = patches[:,:,:-(patches.shape[-1]%PATCH_SIZE)]
+        else:
+            tokens =  torch.tensor([self.bos_token_id], device=self.device)
+
         patches = patches.reshape(len(patches), -1, PATCH_SIZE) # [bs, seq, patch_size]
-        encoded_patches = self.patch_level_decoder(patches)["last_hidden_state"]    # [bs, seq, hidden_size]
+        encoded_patches = self.patch_level_model(plan, patches)["last_hidden_state"]    # [bs, seq, hidden_size]
         generated_patch = []            
 
         while True:
