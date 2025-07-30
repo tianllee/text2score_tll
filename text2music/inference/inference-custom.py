@@ -5,9 +5,9 @@ import torch
 from utils import *
 from config import *
 from transformers import GPT2Config, LlamaConfig
-from abctoolkit.utils import Exclaim_re, Quote_re, SquareBracket_re, Barline_regexPattern
-from abctoolkit.transpose import Note_list, Pitch_sign_list
-from abctoolkit.duration import calculate_bartext_duration
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import Note_list
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_regexPattern
 
 Note_list = Note_list + ['z', 'x']
 
@@ -156,7 +156,7 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 
         input_patches = torch.tensor(prompt_patches, device=device).reshape(1, -1)
 
-        input_plan = patchilizer.encode_plan(plan)
+        input_plan = patchilizer.encode_plan(plan).to(device)
 
         failure_flag = False
         end_flag = False
@@ -173,7 +173,8 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
                 tunebody_flag = True
                 r0_patch = torch.tensor([ord(c) for c in '[r:0/']).unsqueeze(0).to(device)
                 temp_input_patches = torch.concat([input_patches, r0_patch], axis=-1)
-                predicted_patch = model.generate(temp_input_patches.unsqueeze(0),
+                predicted_patch = model.generate(input_plan.unsqueeze(0),
+                                                 temp_input_patches.unsqueeze(0),
                                                  top_k=TOP_K,
                                                  top_p=TOP_P,
                                                  temperature=TEMPERATURE)
