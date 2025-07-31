@@ -39,10 +39,9 @@ def read_abci_with_pitch_shift(filepath, pitch_shift=0, return_lines=False):
     with open(filepath, 'r', encoding='utf-8') as f:
         abci_lines = f.readlines()
     
-    # abci_lines = [unidecode(line.strip()) for line in abci_lines if line.strip()]
     # Normalize, strip, and exclude empty or title lines
     abci_lines = [
-        unidecode(line.strip())
+        unidecode(line)
         for line in abci_lines
         if line.strip() and not line.strip().startswith("T:")
     ]
