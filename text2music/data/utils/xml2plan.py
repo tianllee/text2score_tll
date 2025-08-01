@@ -762,8 +762,8 @@ def get_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
 
 if __name__ == "__main__":
     # Example usage
-    musicxml_file = "path_to_file.xml" # Replace with your MusicXML file path
-    text = get_text_from_xml(musicxml_file)
+    filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/100078.pkl" # Replace with your MusicXML file path
+    text = get_text_from_pkl(filepath)
     print(text)
 
     # data = get_raw_xml_info(musicxml_file)

@@ -43,7 +43,7 @@ def read_abci_with_pitch_shift(filepath, pitch_shift=0, return_lines=False):
     abci_lines = [
         unidecode(line)
         for line in abci_lines
-        if line.strip() and not line.strip().startswith("T:")
+        if line.strip() and not line.strip().startswith("T:") and not line.strip().startswith("C:")
     ]
 
     if pitch_shift == 0:

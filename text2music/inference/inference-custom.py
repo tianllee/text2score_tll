@@ -8,6 +8,7 @@ from transformers import GPT2Config, LlamaConfig
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import Note_list
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_regexPattern
+import shutil
 
 Note_list = Note_list + ['z', 'x']
 
@@ -15,6 +16,13 @@ if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
+
+if os.path.exists(ORIGINAL_OUTPUT_FOLDER):
+    shutil.rmtree(ORIGINAL_OUTPUT_FOLDER)
+if os.path.exists(INTERLEAVED_OUTPUT_FOLDER):
+    shutil.rmtree(INTERLEAVED_OUTPUT_FOLDER)
+if os.path.exists(XML_OUTPUT_FOLDER):
+    shutil.rmtree(XML_OUTPUT_FOLDER)
 
 os.makedirs(ORIGINAL_OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(INTERLEAVED_OUTPUT_FOLDER, exist_ok=True)
@@ -273,4 +281,89 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 
 if __name__ == '__main__':
 
-    inference_patch()
+    plan = """
+    Instruments: Piano
+
+    Measure: 1:
+    Instruments: Piano
+    Pitch Range: 50–84
+    Note Density: 10
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: None
+
+    Measure: 3:
+    Instruments: Piano
+    Pitch Range: 43–86
+    Note Density: 23
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [9, 4], [2, 10, 5], [9, 4], [2, 10, 5]
+
+    Measure: 4:
+    Instruments: Piano
+    Pitch Range: 43–86
+    Note Density: 17
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [9, 2, 4, 7], [9, 4], [2, 10, 5]
+
+    Measure: 5:
+    Instruments: Piano
+    Pitch Range: 43–79
+    Note Density: 17
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [9, 4], [2, 10, 5, 7], [9, 4, 7]
+
+    Measure: 6:
+    Instruments: Piano
+    Pitch Range: 43–82
+    Note Density: 20
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [2, 10, 5], [9, 4], [2, 10, 5]
+
+    Measure: 7:
+    Instruments: Piano
+    Pitch Range: 43–86
+    Note Density: 25
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [9, 4], [9, 4, 5]
+
+    Measure: 8:
+    Instruments: Piano
+    Pitch Range: 40–86
+    Note Density: 18
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [9, 4], [9, 4, 5]
+
+    Measure: 42:
+    Instruments: Piano
+    Pitch Range: 50–86
+    Note Density: 30
+    Tempo: 168 BPM
+    Time Signature: 4/4
+    Key Signature: -3 (minor)
+    Chords: [0, 11, 4]
+
+    Measure: 43:
+    Instruments: Piano
+    Pitch Range: 43–91
+    Note Density: 26
+    Tempo: 168 BPM
+    Time Signature: 3/4
+    Key Signature: -2 (minor)
+    Chords: [0, 11, 4]
+    """
+
+    inference_patch(plan, [], 1)

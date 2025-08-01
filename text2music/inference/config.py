@@ -8,6 +8,7 @@ TOP_P = 0.9                                                      # Top p for sam
 TEMPERATURE = 1.2                                                 # Temperature for sampling
 ORIGINAL_OUTPUT_FOLDER = os.path.join('./output/original', os.path.splitext(os.path.split(INFERENCE_WEIGHTS_PATH)[-1])[0] + '_k_' + str(TOP_K) + '_p_' + str(TOP_P) + '_temp_' + str(TEMPERATURE))
 INTERLEAVED_OUTPUT_FOLDER = os.path.join('./output/interleaved', os.path.splitext(os.path.split(INFERENCE_WEIGHTS_PATH)[-1])[0] + '_k_' + str(TOP_K) + '_p_' + str(TOP_P) + '_temp_' + str(TEMPERATURE))
+XML_OUTPUT_FOLDER = os.path.join('./output/xml', os.path.splitext(os.path.split(INFERENCE_WEIGHTS_PATH)[-1])[0] + '_k_' + str(TOP_K) + '_p_' + str(TOP_P) + '_temp_' + str(TEMPERATURE))
 
 # Configurations for model
 PATCH_STREAM = True                                             # Stream training / inference
