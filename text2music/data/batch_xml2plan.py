@@ -21,10 +21,11 @@ def convert_numpy(obj):
     return obj
 
 dirs = [
-    "/import/c4dm-datasets/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
-    "/import/c4dm-datasets/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
-    "/import/c4dm-datasets/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
-    "/import/c4dm-datasets/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+    "/data/scratch/acw769/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
+    "/data/scratch/acw769/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
+    "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
+    "/data/scratch/acw769/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+    "/data/scratch/acw769/ABC_Dataset/ASAP_MXL_abci"
 ]
 
 files = []

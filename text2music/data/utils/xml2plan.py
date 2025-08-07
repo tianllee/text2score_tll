@@ -255,7 +255,11 @@ def get_full_plan(combined_data):
         
         # Add note density
         total_notes = sum(len(combined_data[measure][instrument]['info']['notes']) for instrument in plan[measure]['instruments'])
-        plan[measure]['note_density'] = total_notes
+        if plan[measure]['instruments']:
+            average_notes = total_notes / len(plan[measure]['instruments'])
+        else:
+            average_notes = 0
+        plan[measure]['note_density'] = average_notes
         
         # Add time signature
         # Assuming all instruments in the measure share the same time signature
@@ -664,9 +668,12 @@ def get_consecutive_measures(full_plan, top_priority_measures):
 
     return consecutive_measures
 
+def convert_plan_to_text(data, pitch_shift: int = 0):
+    # Remove all_instruments from full_plan to avoid confusion
+    if 'all_instruments' in data:
+        all_instruments = data['all_instruments']
+        del data['all_instruments']
 
-def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
-    key_mode_map = {1: "minor", 0: "major"}
     lines = []
 
     # Add header with all instruments
@@ -692,7 +699,49 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
             
 
     for measure, details in data.items():
-        lines.append(f"{measure}:")
+        lines.append(f"{measure}")
+        lines.append(f"  Instruments: {', '.join(details['instruments'])}")
+        lines.append(f"  Pitch Range: {details['pitch_range']['min']}–{details['pitch_range']['max']}")
+        lines.append(f"  Note Density: {details['note_density']}")
+        lines.append(f"  Tempo: {details['tempo']} BPM" if details['tempo'] is not None else "  Tempo: None")
+        lines.append(f"  Time Signature: {details['time_signature']}")
+        lines.append(f"  Key Signature: {details['key_signature']}")
+        chords = [f"[{', '.join(map(str, chord))}]" for chord in details['chords']]
+        if not chords:
+            lines.append("  Chords: None")
+        else:
+            lines.append(f"  Chords: {', '.join(chords)}")
+        lines.append("")  # Blank line between measures
+    return "\n".join(lines)
+
+def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
+    key_mode_map = {0: "minor", 1: "major"}
+    lines = []
+
+    # Add header with all instruments
+    lines.append("Instruments: " + ", ".join(all_instruments))
+    lines.append("")
+
+    # Iterate through data.items() and add pitch shift to pitch range, key signature, and chords
+    for measure, details in data.items():
+        # Adjust pitch range with pitch shift
+        if details['pitch_range']['min'] is not None:
+            details['pitch_range']['min'] += pitch_shift
+        if details['pitch_range']['max'] is not None:
+            details['pitch_range']['max'] += pitch_shift
+        
+        # Adjust key signature with pitch shift
+        if details['key_signature'] is not None:
+            details['key_signature'] += pitch_shift
+        
+        # Adjust chords with pitch shift
+        if details['chords']:
+            chords = [[i + pitch_shift for i in chord] for chord in details['chords']]
+            details['chords'] = chords
+            
+
+    for measure, details in data.items():
+        lines.append(f"{measure}")
         lines.append(f"  Instruments: {', '.join(details['instruments'])}")
         lines.append(f"  Pitch Range: {details['pitch_range']['min']}–{details['pitch_range']['max']}")
         lines.append(f"  Note Density: {details['note_density']}")
@@ -707,7 +756,6 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
             lines.append(f"  Chords: {', '.join(chords)}")
         lines.append("")  # Blank line between measures
     return "\n".join(lines)
-
 
 def get_full_plan_pipeline(musicxml_file: str):
     """
@@ -759,11 +807,28 @@ def get_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
     return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
 
+def get_plan_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
+    """
+    Extracts text representation from a pickled full plan file.
+
+    Args:
+        pkl_file: The path to the pickled full plan file.
+
+    Returns:
+        A string containing the text representation of the measures.
+    """
+    import pickle
+    with open(pkl_file, 'rb') as f:
+        full_plan = pickle.load(f)
+    
+    return convert_plan_to_text(full_plan, pitch_shift=pitch_shift)
+
 
 if __name__ == "__main__":
     # Example usage
-    filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/100078.pkl" # Replace with your MusicXML file path
-    text = get_text_from_pkl(filepath)
+    filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/1203.pkl" # Replace with your MusicXML file path
+    # filepath = "/data/scratch/acw769/ABC_Dataset/PDMX_MXL_abci/mxl_abci/7/20/QmPFakSAmBn3atKBGdmUK2oad6Age7SqLs8qVUja8TgAZW.pkl"
+    text = get_plan_text_from_pkl(filepath)
     print(text)
 
     # data = get_raw_xml_info(musicxml_file)

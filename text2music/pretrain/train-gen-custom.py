@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 from utils import *
 from config import *
-from text2music.data.utils.xml2plan import get_text_from_pkl
+from text2music.data.utils.xml2plan import get_text_from_pkl, get_plan_text_from_pkl
 from text2music.data.utils.abci_augment import read_abci_with_pitch_shift
 from tqdm import tqdm
 from copy import deepcopy
@@ -162,7 +162,7 @@ class NotaGenDataset(Dataset):
             with open(pkl_path, 'rb') as f:
                 plan = pickle.load(f)
 
-            plan = get_text_from_pkl(pkl_path, pitch_shift=pitch_shift)
+            plan = get_plan_text_from_pkl(pkl_path, pitch_shift=pitch_shift)
             # Encode the plan text
             file_plan = patchilizer.encode_plan(plan)
         else:

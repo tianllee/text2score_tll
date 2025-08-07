@@ -282,88 +282,97 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 if __name__ == '__main__':
 
     plan = """
-    Instruments: Piano
+Instruments: Violin, Violin 2, Viola, Cello
 
-    Measure: 1:
-    Instruments: Piano
-    Pitch Range: 50–84
-    Note Density: 10
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: None
+Measure: 1
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 38–81
+  Note Density: 36
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
-    Measure: 3:
-    Instruments: Piano
-    Pitch Range: 43–86
-    Note Density: 23
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [9, 4], [2, 10, 5], [9, 4], [2, 10, 5]
+Measure: 2
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 50–86
+  Note Density: 55
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: None
 
-    Measure: 4:
-    Instruments: Piano
-    Pitch Range: 43–86
-    Note Density: 17
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [9, 2, 4, 7], [9, 4], [2, 10, 5]
+Measure: 3
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 33–81
+  Note Density: 50
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
-    Measure: 5:
-    Instruments: Piano
-    Pitch Range: 43–79
-    Note Density: 17
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [9, 4], [2, 10, 5, 7], [9, 4, 7]
+Measure: 4
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 30–78
+  Note Density: 44
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
 
-    Measure: 6:
-    Instruments: Piano
-    Pitch Range: 43–82
-    Note Density: 20
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [2, 10, 5], [9, 4], [2, 10, 5]
+Measure: 5
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 37–81
+  Note Density: 46
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
-    Measure: 7:
-    Instruments: Piano
-    Pitch Range: 43–86
-    Note Density: 25
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [9, 4], [9, 4, 5]
+Measure: 6
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 33–83
+  Note Density: 36
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
 
-    Measure: 8:
-    Instruments: Piano
-    Pitch Range: 40–86
-    Note Density: 18
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [9, 4], [9, 4, 5]
+Measure: 7
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 40–85
+  Note Density: 45
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [11, 4, 6], [1, 11, 4, 6], [1, 4, 6, 8, 9, 11]
 
-    Measure: 42:
-    Instruments: Piano
-    Pitch Range: 50–86
-    Note Density: 30
-    Tempo: 168 BPM
-    Time Signature: 4/4
-    Key Signature: -3 (minor)
-    Chords: [0, 11, 4]
+Measure: 8
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 42–83
+  Note Density: 42
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [1, 4, 6, 7, 8, 11], [9, 11, 4, 7], [1, 6, 8, 9, 11]
 
-    Measure: 43:
-    Instruments: Piano
-    Pitch Range: 43–91
-    Note Density: 26
-    Tempo: 168 BPM
-    Time Signature: 3/4
-    Key Signature: -2 (minor)
-    Chords: [0, 11, 4]
-    """
+Measure: 9
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 38–81
+  Note Density: 45
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [2, 4, 6, 8, 9], [1, 2], [1, 6, 8, 9, 11]
+
+Measure: 10
+  Instruments: Violin, Violin 2, Viola, Cello
+  Pitch Range: 38–83
+  Note Density: 46
+  Tempo: 76 BPM
+  Time Signature: 3/4
+  Key Signature: 2
+  Chords: [9, 2, 4], [9, 2, 11, 4], [1, 4, 6, 8, 9, 11]
+"""
 
     inference_patch(plan, [], 1)

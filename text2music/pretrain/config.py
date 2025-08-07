@@ -7,14 +7,14 @@ DATA_ROOT = "/data/scratch/acw769/ABC_Dataset/"               # Root directory f
 
 # Configuration for the model
 PATCH_STREAM = True
-PATCH_SIZE = 16                                                 # Patch Size
-PATCH_LENGTH = 2048                                             # Patch Length
-CHAR_NUM_LAYERS = 3                                             # Number of layers in the decoder
-PATCH_NUM_LAYERS = 16                                           # Number of layers in the encoder
+PATCH_SIZE = 64                                                 # Patch Size
+PATCH_LENGTH = 1024                                             # Patch Length
+CHAR_NUM_LAYERS = 6                                             # Number of layers in the decoder
+PATCH_NUM_LAYERS = 20                                           # Number of layers in the encoder
 HIDDEN_SIZE = 768                                               # Hidden Size
 
 # Configuration for the training
-BATCH_SIZE = 8         
+BATCH_SIZE = 12         
 LEARNING_RATE = 1e-4   
 NUM_EPOCHS = 128                                                 # Number of epochs to train for (if early stopping doesn't intervene)
 ACCUMULATION_STEPS = 1                                          # Accumulation steps to simulate large batch size
