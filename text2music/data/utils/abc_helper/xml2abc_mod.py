@@ -361,7 +361,7 @@ class Music:
                     chunk += vn[ib]
                     ib += 1
                 bn += ib
-                abcOut.add(chunk + ' %%%d' % bn)  # line with barnumer
+                # abcOut.add(chunk + ' %%%d' % bn)  # line with barnumer
                 del vn[:ib]  # chop ib bars
                 lyrlines = sorted(vl.items())  # order the numbered lyric lines for output
                 for n, lyrs in lyrlines:

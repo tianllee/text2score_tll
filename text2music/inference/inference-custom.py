@@ -282,10 +282,10 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 if __name__ == '__main__':
 
     plan = """
-Instruments: Violin, Violin 2, Viola, Cello
+Instruments: Violin, Violin 2, Viola, Classical Guitar
 
 Measure: 1
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 38–81
   Note Density: 36
   Tempo: 76 BPM
@@ -294,7 +294,7 @@ Measure: 1
   Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
 Measure: 2
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 50–86
   Note Density: 55
   Tempo: 76 BPM
@@ -303,7 +303,7 @@ Measure: 2
   Chords: None
 
 Measure: 3
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 33–81
   Note Density: 50
   Tempo: 76 BPM
@@ -312,7 +312,7 @@ Measure: 3
   Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
 Measure: 4
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 30–78
   Note Density: 44
   Tempo: 76 BPM
@@ -321,7 +321,7 @@ Measure: 4
   Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
 
 Measure: 5
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 37–81
   Note Density: 46
   Tempo: 76 BPM
@@ -330,7 +330,7 @@ Measure: 5
   Chords: [9, 2], [2], [2, 6, 8, 9, 11]
 
 Measure: 6
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 33–83
   Note Density: 36
   Tempo: 76 BPM
@@ -339,7 +339,7 @@ Measure: 6
   Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
 
 Measure: 7
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 40–85
   Note Density: 45
   Tempo: 76 BPM
@@ -348,7 +348,7 @@ Measure: 7
   Chords: [11, 4, 6], [1, 11, 4, 6], [1, 4, 6, 8, 9, 11]
 
 Measure: 8
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 42–83
   Note Density: 42
   Tempo: 76 BPM
@@ -357,7 +357,7 @@ Measure: 8
   Chords: [1, 4, 6, 7, 8, 11], [9, 11, 4, 7], [1, 6, 8, 9, 11]
 
 Measure: 9
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 38–81
   Note Density: 45
   Tempo: 76 BPM
@@ -366,7 +366,7 @@ Measure: 9
   Chords: [2, 4, 6, 8, 9], [1, 2], [1, 6, 8, 9, 11]
 
 Measure: 10
-  Instruments: Violin, Violin 2, Viola, Cello
+  Instruments: Violin, Violin 2, Viola, Classical Guitar
   Pitch Range: 38–83
   Note Density: 46
   Tempo: 76 BPM
