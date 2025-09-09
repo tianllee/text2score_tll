@@ -25,7 +25,8 @@ dirs = [
     "/data/scratch/acw769/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
     "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
     "/data/scratch/acw769/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
-    "/data/scratch/acw769/ABC_Dataset/ASAP_MXL_abci"
+    "/data/scratch/acw769/ABC_Dataset/ASAP_MXL_abci",
+    "/data/scratch/acw769/ABC_Dataset/MS3_MXL_abci"
 ]
 
 files = []
