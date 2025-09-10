@@ -1,10 +1,11 @@
 import os
 import re
 import random
-from utils.abc_helper.abctoolkit_v006_mod.utils import (find_all_abc, remove_information_field,
-                                                        remove_bar_no_annotations, Quote_re, Barlines, strip_empty_bars)
-from utils.abc_helper.abctoolkit_v006_mod.rotate import rotate_abc
-from utils.abc_helper.abctoolkit_v006_mod.check import check_alignment_unrotated
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import (find_all_abc, remove_information_field,
+                                                                        remove_bar_no_annotations, Quote_re, Barlines,
+                                                                        strip_empty_bars)
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.rotate import rotate_abc
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.check import check_alignment_unrotated
 
 
 def abc2abc_interleaved(abc_lines):

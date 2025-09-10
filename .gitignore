@@ -3,6 +3,7 @@
 __MACOSX
 .vscode
 **/test_data
+logs/
 
 # Python-related files
 __pycache__/

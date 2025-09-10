@@ -4,7 +4,8 @@ from glob import glob
 from multiprocessing import Pool
 from functools import partial
 from tqdm import tqdm
-from utils.convert_formats import convert_xml2abc_interleaved
+from text2music.data.utils.convert_formats import convert_xml2abc_interleaved
+
 
 def process_file(xml_file, data_root=None, output_dir=None):
     """Process a single XML file to ABC interleaved format."""
@@ -18,7 +19,7 @@ def process_file(xml_file, data_root=None, output_dir=None):
             abci_file = path.join(output_dir, rel_path, path.basename(abci_file))
             # Ensure output directory exists
             makedirs(path.dirname(abci_file), exist_ok=True)
-        
+
         abci_lines = convert_xml2abc_interleaved(xml_file, abci_file)
         if abci_lines is None:
             return False, xml_file
@@ -26,18 +27,15 @@ def process_file(xml_file, data_root=None, output_dir=None):
     except Exception as e:
         return False, xml_file
 
+
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Convert MusicXML files to ABC interleaved format")
-    parser.add_argument('--data_root', type=str, default="../../data",
-                        help='Root directory containing MusicXML files')
-    parser.add_argument('--output_dir', type=str, default=None,
-                        help='Output directory for ABCI files (optional)')
-    parser.add_argument('--num_workers', type=int, default=8,
-                        help='Number of worker processes for parallel processing')
-    
-    args = parser.parse_args()
+    parser.add_argument('--data_root', type=str, default="../../data", help='Root directory containing MusicXML files')
+    parser.add_argument('--output_dir', type=str, default=None, help='Output directory for ABCI files (optional)')
+    parser.add_argument('--num_workers', type=int, default=8, help='Number of worker processes for parallel processing')
 
+    args = parser.parse_args()
 
     # If output_dir is not specified, create one by appending "_abci" to data_root
     if args.output_dir is None:
@@ -46,11 +44,11 @@ def main():
     # Get list of XML files (both .musicxml and .xml)
     # xml_filelist = glob(path.join(args.data_root, "**/*.[mM][uU][sS][iI][cC][xX][mM][lL]"), recursive=True) + \
     #                glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True) + \
-    #                glob(path.join(args.data_root, "**/*.[mM][xX][lL]"), recursive=True) 
-    
+    #                glob(path.join(args.data_root, "**/*.[mM][xX][lL]"), recursive=True)
+
     # Get only .xml files as .mxl files are ignored
     xml_filelist = glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True)
-    
+
     if not xml_filelist:
         print(f"No XML files found in {args.data_root}")
         return
@@ -62,11 +60,10 @@ def main():
     with Pool(processes=args.num_workers) as pool:
         # Create partial function with data_root and output_dir
         process_func = partial(process_file, data_root=args.data_root, output_dir=args.output_dir)
-        
+
         # Process files with tqdm progress bar
-        results = list(tqdm(pool.imap(process_func, xml_filelist), 
-                           total=len(xml_filelist), 
-                           desc="Converting MusicXML to ABCI"))
+        results = list(tqdm(pool.imap(process_func, xml_filelist), total=len(xml_filelist),
+                            desc="Converting MusicXML to ABCI"))
 
     # Count successes and failures
     for result, xml_file in results:
@@ -77,6 +74,7 @@ def main():
             print(f"Failed to convert {xml_file}")
 
     print(f"\nxml to abc_interleaved: success={success}, failure={fail}")
+
 
 if __name__ == "__main__":
     main()
