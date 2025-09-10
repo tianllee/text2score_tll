@@ -715,7 +715,6 @@ def convert_plan_to_text(data, pitch_shift: int = 0):
     return "\n".join(lines)
 
 def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
-    key_mode_map = {0: "minor", 1: "major"}
     lines = []
 
     # Add header with all instruments
@@ -747,8 +746,6 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
         lines.append(f"  Note Density: {details['note_density']}")
         lines.append(f"  Tempo: {details['tempo']} BPM" if details['tempo'] is not None else "  Tempo: None")
         lines.append(f"  Time Signature: {details['time_signature']}")
-        key_mode = key_mode_map.get(details['key_mode'], "Unknown")
-        lines.append(f"  Key Signature: {details['key_signature']} ({key_mode})")
         chords = [f"[{', '.join(map(str, chord))}]" for chord in details['chords']]
         if not chords:
             lines.append("  Chords: None")
@@ -826,8 +823,7 @@ def get_plan_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
 
 if __name__ == "__main__":
     # Example usage
-    filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/1203.pkl" # Replace with your MusicXML file path
-    # filepath = "/data/scratch/acw769/ABC_Dataset/PDMX_MXL_abci/mxl_abci/7/20/QmPFakSAmBn3atKBGdmUK2oad6Age7SqLs8qVUja8TgAZW.pkl"
+    filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/1203.pkl"
     text = get_plan_text_from_pkl(filepath)
     print(text)
 

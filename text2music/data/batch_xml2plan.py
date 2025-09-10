@@ -21,18 +21,23 @@ def convert_numpy(obj):
     return obj
 
 dirs = [
-    "/data/scratch/acw769/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
-    "/data/scratch/acw769/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
-    "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
-    "/data/scratch/acw769/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
-    "/data/scratch/acw769/ABC_Dataset/ASAP_MXL_abci",
-    "/data/scratch/acw769/ABC_Dataset/MS3_MXL_abci"
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/ASAP_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/MS3_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/ABC_Notation_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/Wikifonia_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/PDMX_MXL_abci/mxl_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/SymphonyNet_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/ASAP_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/MS3_MXL_abci"
 ]
 
 files = []
 for d in dirs:
     files.extend(glob(f"{d}/**/*.xml", recursive=True))
-    # files.extend(glob(f"{d}/**/*.mxl", recursive=True))
 
 # files = files[:5]  # Limit to first 5 files for testing
 
@@ -59,7 +64,7 @@ def process_file(file):
 
 def main():
     results = []
-    with ProcessPoolExecutor(max_workers=6) as executor:
+    with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {executor.submit(process_file, f): f for f in files}
         with tqdm(total=len(futures), desc="Processing XML files") as pbar:
             for future in as_completed(futures):

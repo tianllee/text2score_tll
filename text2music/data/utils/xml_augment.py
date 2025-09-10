@@ -184,7 +184,7 @@ def transpose_musicxml(input_file: str, output_file: str, semitones: int):
         root = tree.getroot()
     except (ET.ParseError, FileNotFoundError) as e:
         print(f"Error reading/parsing '{input_file}': {e}", file=sys.stderr)
-        sys.exit(1)
+        return
 
     percussion_parts = find_percussion_parts(root)
 
@@ -197,10 +197,10 @@ def transpose_musicxml(input_file: str, output_file: str, semitones: int):
     # write
     try:
         tree.write(output_file, encoding='UTF-8', xml_declaration=True)
-        print(f"Successfully wrote transposed file to '{output_file}'")
+        # print(f"Successfully wrote transposed file to '{output_file}'")
     except Exception as e:
         print(f"Error writing '{output_file}': {e}", file=sys.stderr)
-        sys.exit(1)
+    return
 
 
 if __name__ == "__main__":

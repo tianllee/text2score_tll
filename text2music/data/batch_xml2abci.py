@@ -44,12 +44,15 @@ def main():
         args.output_dir = args.data_root + "_abci"
 
     # Get list of XML files (both .musicxml and .xml)
-    xml_filelist = glob(path.join(args.data_root, "**/*.[mM][uU][sS][iI][cC][xX][mM][lL]"), recursive=True) + \
-                   glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True) + \
-                   glob(path.join(args.data_root, "**/*.[mM][xX][lL]"), recursive=True) 
+    # xml_filelist = glob(path.join(args.data_root, "**/*.[mM][uU][sS][iI][cC][xX][mM][lL]"), recursive=True) + \
+    #                glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True) + \
+    #                glob(path.join(args.data_root, "**/*.[mM][xX][lL]"), recursive=True) 
+    
+    # Get only .xml files as .mxl files are ignored
+    xml_filelist = glob(path.join(args.data_root, "**/*.[xX][mM][lL]"), recursive=True)
     
     if not xml_filelist:
-        print(f"No MusicXML or XML files found in {args.data_root}")
+        print(f"No XML files found in {args.data_root}")
         return
 
     # Initialize counters
