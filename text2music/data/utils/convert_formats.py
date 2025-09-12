@@ -118,7 +118,7 @@ def convert_xml2abc_interleaved(input_file: str,
 
     # Convert ABC to interleaved ABC
     if fix_abc:
-        abc_lines = fix_missing_voice_field(abc_lines)
+        # abc_lines = fix_missing_voice_field(abc_lines) <-- this fix causes unequal bar errors
         abc_lines = remove_empty_lines(abc_lines)
 
     interleaved_abc_lines, error = abc2abc_interleaved(abc_lines)
