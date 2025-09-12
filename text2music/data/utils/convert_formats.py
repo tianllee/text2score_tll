@@ -49,7 +49,9 @@ from typing import Optional, List
 from .abc_helper.abc2abc_interleaved import abc2abc_interleaved
 
 
-def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = None) -> Optional[List[str]]:
+def convert_xml2abc_interleaved(input_file: str,
+                                output_file: Optional[str] = None,
+                                fix_abc: bool = True) -> Optional[List[str]]:
     """
     Convert XML files to ABC format (interleaved) for the M3 model.
     
@@ -57,7 +59,8 @@ def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = No
         input_file (str): Path to the XML file.
         output_file (str): Path to save the interleaved ABC file, typically with a .abci extension.
             If None, no file is saved.
-    
+        fix_abc (bool): Whether to fix the ABC file. Default is True.
+
     Returns:
         list: List of strings containing the interleaved ABC notation. None if unsuccessful.
     """
@@ -114,7 +117,12 @@ def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = No
         return None
 
     # Convert ABC to interleaved ABC
+    if fix_abc:
+        abc_lines = fix_missing_voice_field(abc_lines)
+        abc_lines = remove_empty_lines(abc_lines)
+
     interleaved_abc_lines, error = abc2abc_interleaved(abc_lines)
+
     if error is not None:
         print(f"Error interleaving ABC for {input_file}: {error}")
         Path("logs").mkdir(exist_ok=True)
