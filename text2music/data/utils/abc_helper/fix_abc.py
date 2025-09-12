@@ -14,6 +14,10 @@ def fix_missing_voice_field(abc_lines):
     - Ensure note lines start with '|', without affecting header lines.
     """
 
+    # Check if voice fields (e.g., V:1) already exist. If so, do nothing.
+    if any(line.strip().startswith('V:') for line in abc_lines):
+        return abc_lines
+
     # Step 1: Remove empty lines
     abc_lines = [line for line in abc_lines if line.strip()]
 
