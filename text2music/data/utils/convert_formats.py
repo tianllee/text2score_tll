@@ -43,59 +43,6 @@ def convert_abc2abc_interleaved(input_file: str,
     return None
 
 
-# def convert_xml2abc_interleaved(input_file: str, output_file: Optional[str] = None) -> None:
-#     """
-#     Convert XML files to ABC format (interleaved) for the M3 model.
-
-#     Args:
-#         input_file (str): Path to the XML file.
-#         output_file (str): Path to save the interleaved ABC file, typically with a .abci extension.
-#             If None, no file is saved.
-
-#     Returns:
-#         list: List of strings containing the interleaved ABC notation. None if unsuccessful.
-#     """
-#     assert path.exists(input_file)
-#     input_file = path.abspath(input_file)
-#     if output_file is not None:
-#         os.makedirs(path.dirname(output_file), exist_ok=True)
-
-#     # xml --> abc
-#     try:
-#         cmd = f'python utils/abc_helper/xml2abc.py -d 8 -x "{input_file}"'
-#         # cmd = f'python utils/abc_helper/xml2abc.py -d 8 -x "{input_file}"'
-#         # p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
-#         # result = p.communicate()
-#         # abc_output = result[0].decode('ucmdtf-8')
-#         result = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
-#         abc_lines = result.splitlines()
-#     except Exception as e:
-#         print(f'Error converting {input_file}: {e}')
-#         os.makedirs("logs", exist_ok=True)
-#         with open("logs/xml2abc_error_log.txt", "a", encoding="utf-8") as f:
-#             f.write(input_file + ' ' + str(e) + '\n')
-#         return None
-#     if len(abc_lines) == 0:
-#         print(f'Error converting {input_file}: No ABC output')
-#         os.makedirs("logs", exist_ok=True)
-#         with open("logs/xml2abc_error_log.txt", "a", encoding="utf-8") as f:
-#             f.write(input_file + ' No ABC output\n')
-#         return None
-
-#     # abc --> interleaved abc
-#     interleaved_abc_lines, error = abc2abc_interleaved(abc_lines)
-#     if error is not None:
-#         os.makedirs("logs", exist_ok=True)
-#         with open("logs/xml2abc_error_log.txt", "a", encoding="utf-8") as f:
-#             f.write(input_file + ' ' + error + '\n')
-
-#     if interleaved_abc_lines is not None:
-#         if output_file is not None:
-#             with open(output_file, 'w', encoding='utf-8') as w:
-#                 w.writelines(interleaved_abc_lines)
-#         return interleaved_abc_lines
-#     else:
-#         return None
 from pathlib import Path
 import subprocess
 from typing import Optional, List
