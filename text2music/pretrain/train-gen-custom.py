@@ -231,7 +231,7 @@ def train_epoch(epoch):
             wandb.log({"train_loss": total_train_loss / iter_idx}, step=train_steps)
 
         iter_idx += 1
-        if iter_idx % 1000 == 0:
+        if iter_idx % 100 == 0:
             clear_unused_tensors()
 
     return total_train_loss / (iter_idx - 1)
