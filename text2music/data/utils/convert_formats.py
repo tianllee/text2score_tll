@@ -83,7 +83,7 @@ def convert_xml2abc_interleaved(input_file: str,
         raise FileNotFoundError(f"xml2abc.py not found at {xml2abc_path}")
 
     # Build command to run xml2abc.py
-    cmd = f'python "{xml2abc_path}" -d 8 -x "{input_path}"'
+    cmd = f'python "{xml2abc_path}" -d 8 -c 6 -x "{input_path}"'
 
     # Run the command
     try:

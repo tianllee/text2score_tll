@@ -786,7 +786,7 @@ def get_text_from_xml(musicxml_file: str, pitch_shift: int = 0):
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
     return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
 
-def get_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
+def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0):
     """
     Extracts text representation from a pickled full plan file.
 
@@ -804,7 +804,7 @@ def get_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
     return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
 
-def get_plan_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
+def get_full_plan_text(pkl_file: str, pitch_shift: int = 0):
     """
     Extracts text representation from a pickled full plan file.
 
@@ -824,7 +824,7 @@ def get_plan_text_from_pkl(pkl_file: str, pitch_shift: int = 0):
 if __name__ == "__main__":
     # Example usage
     filepath = "/data/scratch/acw769/ABC_Dataset/SymphonyNet_Dataset_MXL_abci/outputs/1203.pkl"
-    text = get_plan_text_from_pkl(filepath)
+    text = get_full_plan_text(filepath)
     print(text)
 
     # data = get_raw_xml_info(musicxml_file)

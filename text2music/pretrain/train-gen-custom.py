@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 from utils import *
 from config import *
-from text2music.data.utils.xml2plan import get_text_from_pkl, get_plan_text_from_pkl
+from text2music.data.utils.xml2plan import get_partial_plan_text, get_full_plan_text
 from text2music.data.utils.abci_augment import read_abci_with_pitch_shift
 from tqdm import tqdm
 from copy import deepcopy
@@ -135,19 +135,30 @@ def split_into_minibatches(input_patches, input_masks, minibatch_size):
 
 class NotaGenDataset(Dataset):
 
-    def __init__(self, filenames, data_root, pitch_shift_range=(0, 0)):
+    def __init__(self, filenames, data_root, pitch_shift_range=(0, 0), split="train"):
         """
         Args:
             filenames (list): List of dictionaries containing file paths and other metadata.
             pitch_shift_range (tuple): Range of random pitch shift in semitones.
                 Default is (0, 0) meaning no transposition.
         """
-        self.filenames = filenames
+        if split == "train":
+            self.all_files = filenames
+            self.unique_files = [file for file in filenames if 'augmented' not in file['path'].lower()]
+            # Sample length of unique files from all files
+            self.filenames = random.choices(self.all_files, k=len(self.unique_files))
+        else:
+            self.filenames = filenames
         self.pitch_shift_range = pitch_shift_range
         self.data_root = data_root
 
     def __len__(self):
         return len(self.filenames)
+
+    def on_epoch_end(self):
+        # Take new sample of augmented files
+        self.filenames = random.choices(self.all_files, k=len(self.unique_files))
+        print("New sample of augmented files taken for training.")
 
     def __getitem__(self, idx):
 
@@ -162,7 +173,7 @@ class NotaGenDataset(Dataset):
             with open(pkl_path, 'rb') as f:
                 plan = pickle.load(f)
 
-            plan = get_plan_text_from_pkl(pkl_path, pitch_shift=pitch_shift)
+            plan = get_full_plan_text(pkl_path, pitch_shift=pitch_shift)
             # Encode the plan text
             file_plan = patchilizer.encode_plan(plan)
         else:
@@ -230,7 +241,6 @@ def train_epoch(epoch):
 def eval_epoch():
     tqdm_eval_set = tqdm(eval_set)
     total_eval_loss = 0
-    total_eval_bpb = 0
     iter_idx = 1
     model.eval()
 
@@ -282,8 +292,8 @@ if __name__ == "__main__":
     eval_files = eval_files[:eval_batch_nums * batch_size]
 
     # train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(-5, 5))
-    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(0, 0))
-    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(0, 0))
+    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(0, 0), split="train")
+    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(0, 0), split="eval")
 
     train_sampler = DistributedSampler(train_set, num_replicas=world_size, rank=local_rank)
     eval_sampler = DistributedSampler(eval_set, num_replicas=world_size, rank=local_rank)
@@ -340,6 +350,8 @@ if __name__ == "__main__":
         eval_sampler.set_epoch(epoch)
         print('-' * 21 + "Epoch " + str(epoch) + '-' * 21)
         train_loss = train_epoch(epoch)
+        if hasattr(train_set.dataset, "on_epoch_end"):
+            train_set.dataset.on_epoch_end()
         eval_loss = eval_epoch()
         if global_rank == 0:
             with open(LOGS_PATH, 'a') as f:

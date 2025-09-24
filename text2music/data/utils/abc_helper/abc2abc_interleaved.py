@@ -20,10 +20,10 @@ def abc2abc_interleaved(abc_lines):
         error (str): Error message if any. None if successful.
     """
     abc_lines = [line for line in abc_lines if line.strip() != '']
-    # abc_lines = remove_information_field(abc_lines=abc_lines,
-    #                                      info_fields=['X:', 'T:', 'C:', 'W:', 'w:', 'Z:', '%%MIDI'])
+    abc_lines = remove_information_field(abc_lines=abc_lines,
+                                         info_fields=['X:', 'T:', 'C:', 'W:', 'w:', 'Z:', '%%MIDI'])
     # Modified to keep the information fields except for lyrics. T for title, C for composer,
-    abc_lines = remove_information_field(abc_lines=abc_lines, info_fields=['X:', 'W:', 'w:', 'Z:', '%%MIDI'])
+    # abc_lines = remove_information_field(abc_lines=abc_lines, info_fields=['X:', 'W:', 'w:', 'Z:', '%%MIDI'])
     abc_lines = remove_bar_no_annotations(abc_lines)
 
     # Remove escaped quotes and clean up barlines inside quotes

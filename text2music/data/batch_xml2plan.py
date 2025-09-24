@@ -27,7 +27,6 @@ dirs = [
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/ASAP_MXL_abci",
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/MS3_MXL_abci",
-    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/ABC_Notation_Dataset_MXL_abci",
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/Wikifonia_Dataset_MXL_abci",
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/PDMX_MXL_abci/mxl_abci",
     "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/SymphonyNet_Dataset_MXL_abci",
@@ -46,7 +45,7 @@ def process_file(file):
         # json_path = file.replace(".mxl", ".json")
         # pkl_path = file.replace(".mxl", ".pkl")
     if file.endswith(".xml"):
-        json_path = file.replace(".xml", ".json")
+        # json_path = file.replace(".xml", ".json")
         pkl_path = file.replace(".xml", ".pkl")
     else:
         return f"Skipped unsupported format: {file}"
@@ -54,11 +53,11 @@ def process_file(file):
     try:
         plan = get_full_plan_pipeline(file)
         plan = convert_numpy(plan)
-        with open(json_path, "w") as f:
-            json.dump(plan, f, indent=2, ensure_ascii=False)
+        # with open(json_path, "w") as f:
+        #     json.dump(plan, f, indent=2, ensure_ascii=False)
         with open(pkl_path, "wb") as f:
             pickle.dump(plan, f)
-        return f"Processed {json_path}"
+        return f"Processed {pkl_path}"
     except Exception as e:
         return f"Error processing {file}: {e}"
 

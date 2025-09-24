@@ -7,15 +7,11 @@ import numpy as np
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-DATA_ROOT_DIR = "/import/c4dm-datasets/ABC_Dataset"
+# DATA_ROOT_DIR = "/import/c4dm-datasets/ABC_Dataset"
 
 
 dirs = [
-    "/import/c4dm-datasets/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
-    "/import/c4dm-datasets/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
-    "/import/c4dm-datasets/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
-    "/import/c4dm-datasets/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
-    "/import/c4dm-datasets/ABC_Dataset/ASAP_MXL_abci"
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/"
 ]
 
 files = []
@@ -24,7 +20,7 @@ for d in dirs:
 
 # Create train and val sets
 random.shuffle(files)
-n_val_files = 1000
+n_val_files = 10000
 train_files = files[:-n_val_files]
 val_files = files[-n_val_files:]
 print(f"Number of train files: {len(train_files)}")
@@ -54,7 +50,7 @@ def create_jsonl_with_keys(files, output_path):
     with open(output_path, 'w', encoding='utf-8') as f_out:
         for file in tqdm(files, desc="Processing files"):
             key = read_abci_file(file)
-            rel_path = os.path.relpath(file, start=os.path.dirname("/import/c4dm-datasets/ABC_Dataset/"))
+            rel_path = os.path.relpath(file, start=os.path.dirname("/data/scratch/eey549/ABC_Dataset/ABC_Dataset/"))
             entry = {
                 "path": rel_path,
                 "key": key if key else "None"
