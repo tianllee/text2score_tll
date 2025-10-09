@@ -60,20 +60,6 @@ char_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
                          num_attention_heads=HIDDEN_SIZE // 64,
                          vocab_size=128)
 
-# model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
-model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
-model = model.to(device)
-
-# print parameter number
-print("Parameter Number: " + str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
-
-if world_size > 1:
-    model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
-
-scaler = GradScaler()
-is_autocast = True
-optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
 
 def clear_unused_tensors():
     gc.disable()  # Temporarily disable garbage collection
@@ -145,6 +131,7 @@ class NotaGenDataset(Dataset):
         if split == "train":
             self.all_files = filenames
             self.unique_files = [file for file in filenames if 'augmented' not in file['path'].lower()]
+            print(f"Number of unique training files: {len(self.unique_files)}")
             # Sample length of unique files from all files
             self.filenames = random.choices(self.all_files, k=len(self.unique_files))
         else:
@@ -231,8 +218,12 @@ def train_epoch(epoch):
             wandb.log({"train_loss": total_train_loss / iter_idx}, step=train_steps)
 
         iter_idx += 1
-        if iter_idx % 100 == 0:
-            clear_unused_tensors()
+        if iter_idx % 5 == 0:
+            # Delete objects containing tensors to free up memory
+            del loss, minibatch, input_patches, input_masks, batch
+            gc.collect()
+            torch.cuda.empty_cache()
+        #     clear_unused_tensors()
 
     return total_train_loss / (iter_idx - 1)
 
@@ -273,9 +264,6 @@ if __name__ == "__main__":
         for line in f:
             train_files.append(json.loads(line))
 
-    # Tmp: remove files which contain symphony
-    # train_files = [file for file in train_files if 'ABC_Notation_Dataset_MXL_abci' in file['path']]
-
     with open(DATA_EVAL_INDEX_PATH, "r", encoding="utf-8") as f:
         print("Loading Data...")
         eval_files = []
@@ -311,47 +299,63 @@ if __name__ == "__main__":
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 
-    lr_scheduler = get_constant_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=1000)
-
-    model = model.to(device)
+    # model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
+    model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    lr_scheduler = get_constant_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=1000)
+    scaler = GradScaler()
+
+    pre_epoch = 0
+    best_epoch = 0
+    min_eval_loss = 100
 
     if LOAD_FROM_CHECKPOINT and os.path.exists(WEIGHTS_PATH):
-        # Load checkpoint to CPU
         checkpoint = torch.load(WEIGHTS_PATH, map_location='cpu')
-
-        # Here, model is assumed to be on GPU
-        # Load state dict to CPU model first, then move the model to GPU
-        if torch.cuda.device_count() > 1:
-            # If you have a DataParallel model, you need to load to model.module instead
-            cpu_model = deepcopy(model.module)
-            cpu_model.load_state_dict(checkpoint['model'])
-            model.module.load_state_dict(cpu_model.state_dict())
+        
+        # Use a more robust way to load DDP models
+        state_dict = checkpoint['model']
+        if any(key.startswith('module.') for key in state_dict.keys()):
+            # A DDP model was saved, so strip 'module.' prefix
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[7:] # remove `module.`
+                new_state_dict[name] = v
+            model.load_state_dict(new_state_dict)
         else:
-            # Load to a CPU clone of the model, then load back
-            cpu_model = deepcopy(model)
-            cpu_model.load_state_dict(checkpoint['model'])
-            model.load_state_dict(cpu_model.state_dict())
+            # A non-DDP model was saved
+            model.load_state_dict(state_dict)
+            
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_sched'])
         pre_epoch = checkpoint['epoch']
         best_epoch = checkpoint['best_epoch']
         min_eval_loss = checkpoint['min_eval_loss']
-        print("Successfully Loaded Checkpoint from Epoch %d" % pre_epoch)
-        checkpoint = None
+        print(f"Successfully Loaded Checkpoint from Epoch {pre_epoch}")
+        del checkpoint # free up memory
+        gc.collect()
+        torch.cuda.empty_cache()
 
-    else:
-        pre_epoch = 0
-        best_epoch = 0
-        min_eval_loss = 100
+    # Now move the fully configured model to the correct GPU device
+    model = model.to(device)
+
+    # Move optimizer state to the correct GPU device
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.to(device)
+
+    # Finally, wrap the model with DDP
+    if world_size > 1:
+        model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
 
     for epoch in range(1 + pre_epoch, NUM_EPOCHS + 1):
         train_sampler.set_epoch(epoch)
         eval_sampler.set_epoch(epoch)
         print('-' * 21 + "Epoch " + str(epoch) + '-' * 21)
-        train_loss = train_epoch(epoch)
         if hasattr(train_set.dataset, "on_epoch_end"):
             train_set.dataset.on_epoch_end()
+        train_loss = train_epoch(epoch)
         eval_loss = eval_epoch()
         if global_rank == 0:
             with open(LOGS_PATH, 'a') as f:
