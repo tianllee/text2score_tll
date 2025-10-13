@@ -218,10 +218,9 @@ def train_epoch(epoch):
             wandb.log({"train_loss": total_train_loss / iter_idx}, step=train_steps)
 
         iter_idx += 1
+        # Delete objects containing tensors to free up memory
+        del loss, minibatch, input_patches, input_masks, batch, plan
         if iter_idx % 5 == 0:
-            # Delete objects containing tensors to free up memory
-            del loss, minibatch, input_patches, input_masks, batch
-            gc.collect()
             torch.cuda.empty_cache()
         #     clear_unused_tensors()
 
@@ -332,7 +331,7 @@ if __name__ == "__main__":
         best_epoch = checkpoint['best_epoch']
         min_eval_loss = checkpoint['min_eval_loss']
         print(f"Successfully Loaded Checkpoint from Epoch {pre_epoch}")
-        del checkpoint # free up memory
+        del checkpoint, state_dict # Free up memory
         gc.collect()
         torch.cuda.empty_cache()
 
