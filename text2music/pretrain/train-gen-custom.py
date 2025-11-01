@@ -13,7 +13,6 @@ from config import *
 from text2music.data.utils.xml2plan import get_partial_plan_text, get_full_plan_text
 from text2music.data.utils.abci_augment import read_abci_with_pitch_shift
 from tqdm import tqdm
-from copy import deepcopy
 from torch.amp import autocast, GradScaler
 from torch.utils.data import Dataset, DataLoader
 from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_warmup

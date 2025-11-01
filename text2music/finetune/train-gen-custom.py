@@ -1,27 +1,28 @@
 import os
 import gc
 import time
-import math
+import weakref
+import pickle
 import json
 import wandb
 import torch
 import random
 import numpy as np
-from abctoolkit.transpose import Key2index, Key2Mode
 from utils import *
 from config import *
+from text2music.data.utils.xml2plan import get_partial_plan_text, get_full_plan_text
+from text2music.data.utils.abci_augment import read_abci_with_pitch_shift
 from tqdm import tqdm
 from copy import deepcopy
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from torch.utils.data import Dataset, DataLoader
-from transformers import GPT2Config, LlamaConfig, get_scheduler, get_constant_schedule_with_warmup
+from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_warmup
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
-from peft import get_peft_model, LoraConfig, TaskType
 
-Index2Key = {index: key for key, index in Key2index.items() if index not in [1, 11]}
-Mode2Key = {mode: key for key, mode_list in Key2Mode.items() for mode in mode_list }
+# Index2Key = {index: key for key, index in Key2index.items() if index not in [1, 11]}
+# Mode2Key = {mode: key for key, mode_list in Key2Mode.items() for mode in mode_list }
 
 # Set up distributed training
 world_size = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
@@ -62,17 +63,9 @@ char_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
                             num_attention_heads=HIDDEN_SIZE//64,
                             vocab_size=128)
 
-original_model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
-original_model = original_model.to(device)
-# print parameter number of original model
-print("Original Model Parameter Number: "+str(sum(p.numel() for p in original_model.parameters() if p.requires_grad)))
-
 model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
 # print parameter number of model
 print("Custom Model Parameter Number: "+str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
-
-# if world_size > 1:
-#     model = DDP(model, device_ids=[local_rank], output_device=local_rank,  find_unused_parameters=True)
 
 scaler = GradScaler()
 is_autocast = True
@@ -123,7 +116,7 @@ def collate_batch(input_batches):
     input_plan = torch.nn.utils.rnn.pad_sequence(input_plan, batch_first=True, padding_value=0)
     input_masks = torch.nn.utils.rnn.pad_sequence(input_masks, batch_first=True, padding_value=0)
 
-    return input_patches.to(device), input_plan.to(device), input_masks.to(device)
+    return input_patches, input_plan, input_masks
 
 def split_into_minibatches(input_patches, input_masks, minibatch_size):
     minibatches = []
@@ -135,51 +128,59 @@ def split_into_minibatches(input_patches, input_masks, minibatch_size):
     return minibatches
 
 class NotaGenDataset(Dataset):
-    def __init__(self, filenames):
-        self.filenames = filenames
+
+    def __init__(self, filenames, data_root, pitch_shift_range=(0, 0), split="train"):
+        """
+        Args:
+            filenames (list): List of dictionaries containing file paths and other metadata.
+            pitch_shift_range (tuple): Range of random pitch shift in semitones.
+                Default is (0, 0) meaning no transposition.
+        """
+        if split == "train":
+            self.all_files = filenames
+            self.unique_files = [file for file in filenames if 'augmented' not in file['path'].lower()]
+            print(f"Number of unique training files: {len(self.unique_files)}")
+            # Sample length of unique files from all files
+            self.filenames = random.choices(self.all_files, k=len(self.unique_files))
+        else:
+            self.filenames = filenames
+        self.pitch_shift_range = pitch_shift_range
+        self.data_root = data_root
 
     def __len__(self):
         return len(self.filenames)
 
+    def on_epoch_end(self):
+        # Take new sample of augmented files
+        self.filenames = random.choices(self.all_files, k=len(self.unique_files))
+        print("New sample of augmented files taken for training.")
+
     def __getitem__(self, idx):
 
         filepath = self.filenames[idx]['path']
-        ori_key = Mode2Key[self.filenames[idx]['key']]
+        filepath = os.path.join(self.data_root, filepath)
+        genre = self.filenames[idx].get('genre', None)
 
-        # choose a key to transpose, according to a probility distribution
-        ori_key_index = Key2index[ori_key]
-        available_index = [(ori_key_index + offset) % 12 for offset in range(-3, 4)]
-        index_prob = [1/16, 2/16, 3/16, 4/16, 3/16, 2/16, 1/16]
-        index_prob_range = [0] + [sum(index_prob[0 : i + 1]) for i in range(len(index_prob))]
-        random_number = random.random()
-        for i in range(len(index_prob_range) - 1):
-            if index_prob_range[i] <= random_number < index_prob_range[i + 1]:
-                des_key_index = available_index[i]
-        if des_key_index == 1:
-            des_key = 'Db' if random.random() < 0.8 else 'C#'   
-        elif des_key_index == 11:
-            des_key = 'B' if random.random() < 0.8 else 'Cb'
-        elif des_key_index == 6:
-            des_key = 'F#' if random.random() < 0.5 else 'Gb'
+        pitch_shift = 0 if self.pitch_shift_range == (0, 0) else random.randint(*self.pitch_shift_range)
+        abc_text = read_abci_with_pitch_shift(filepath, pitch_shift=pitch_shift)  # 10 ms
+
+        pkl_path = filepath.replace('.abci', '.pkl')
+        if os.path.exists(pkl_path):
+            with open(pkl_path, 'rb') as f:
+                plan = pickle.load(f)
+
+            plan = get_partial_plan_text(pkl_path, pitch_shift=pitch_shift, genre=genre)  # Get partial plan text with genre
+            # Encode the plan text
+            file_plan = patchilizer.encode_plan(plan)
         else:
-            des_key = Index2Key[des_key_index]
-
-        folder = os.path.dirname(filepath)
-        name = os.path.split(filepath)[-1]
-        des_filepath = os.path.join(folder, des_key, name + '_' + des_key + '.abc')
-        
-        with open(des_filepath, 'r', encoding='utf-8') as f:
-            abc_text = f.read()
+            file_plan = patchilizer.encode_plan("")
 
         file_bytes = patchilizer.encode_train(abc_text)
-        # abc_patch = patchilizer.decode(file_bytes[1:])
-        plan = "This is a test plan to check the model's ability to generate music in a specific key."
         file_masks = [1] * len(file_bytes)
 
         file_bytes = torch.tensor(file_bytes, dtype=torch.long)
-        file_plan = patchilizer.encode_plan(plan)
         file_masks = torch.tensor(file_masks, dtype=torch.long)
-        
+
         return file_bytes, file_plan, file_masks
 
 
@@ -203,75 +204,55 @@ def train_epoch(epoch):
     total_train_loss = 0
     iter_idx = 1
     model.train()
-    train_steps = (epoch-1)*len(train_set)
+    train_steps = (epoch - 1) * len(train_set)
 
     for batch in tqdm_train_set:
-        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE//ACCUMULATION_STEPS)
+        input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
+        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
         for minibatch in minibatches:
-            with autocast():
-                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
+            with autocast("cuda"):
+                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
             scaler.scale(loss).backward()
             total_train_loss += loss.item()
         scaler.step(optimizer)
         scaler.update()
-        
+
         lr_scheduler.step()
         model.zero_grad(set_to_none=True)
-        tqdm_train_set.set_postfix({str(global_rank)+'_train_loss': total_train_loss / iter_idx})
+        tqdm_train_set.set_postfix({str(global_rank) + '_train_loss': total_train_loss / iter_idx})
         train_steps += 1
 
         # Log the training loss to wandb
-        if global_rank==0 and WANDB_LOGGING:
+        if global_rank == 0 and WANDB_LOGGING:
             wandb.log({"train_loss": total_train_loss / iter_idx}, step=train_steps)
 
         iter_idx += 1
-        if iter_idx % 1000 == 0:
-            clear_unused_tensors()
-        
-    return total_train_loss / (iter_idx-1)
+        # Delete objects containing tensors to free up memory
+        del loss, minibatch, input_patches, input_masks, batch, plan
+        if iter_idx % 5 == 0:
+            torch.cuda.empty_cache()
+        #     clear_unused_tensors()
+
+    return total_train_loss / (iter_idx - 1)
 
 # do one epoch for eval
 def eval_epoch():
     tqdm_eval_set = tqdm(eval_set)
     total_eval_loss = 0
-    total_eval_bpb = 0
     iter_idx = 1
     model.eval()
-  
+
     # Evaluate data for one epoch
-    for batch in tqdm_eval_set: 
-        minibatches = split_into_minibatches(batch[0], batch[2], BATCH_SIZE//ACCUMULATION_STEPS)
+    for batch in tqdm_eval_set:
+        input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
+        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
         for minibatch in minibatches:
             with torch.no_grad():
-                loss = process_one_batch(minibatch, batch[1]) / ACCUMULATION_STEPS
+                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
             total_eval_loss += loss.item()
-        tqdm_eval_set.set_postfix({str(global_rank)+'_eval_loss': total_eval_loss / iter_idx})
+        tqdm_eval_set.set_postfix({str(global_rank) + '_eval_loss': total_eval_loss / iter_idx})
         iter_idx += 1
-    return total_eval_loss / (iter_idx-1)
-
-# Copy weights from the original model to the custom model
-def copy_weights(base_model, target_model):
-    """
-    Copy the weights from the base model to the patch-level encoder-decoder model.
-    :param base_model: the base model to copy weights from
-    :param target_model: the target model to copy weights to
-    :return: the target model with copied weights
-    """
-    # Assuming both models have the same architecture for common layers
-    for name, param in base_model.named_parameters():
-        target_layer_name = name.replace('patch_level_decoder', 'patch_level_model')
-        if target_layer_name in target_model.state_dict():
-            # Check if the shapes match before copying
-            if target_model.state_dict()[target_layer_name].shape == param.shape:
-                target_model.state_dict()[target_layer_name].copy_(param.data)
-                # print(f"Copied weights for layer: {name}")
-            else:
-                print(f"Shape mismatch for layer {name}. Skipping.")
-        else:
-            print(f"Layer {name} not found in target model. Skipping.")
-
-    print("Weight copying complete.")
-    return target_model
+    return total_eval_loss / (iter_idx - 1)
 
 def split_data(data):
     """
@@ -324,8 +305,8 @@ if __name__ == "__main__":
     train_files = train_files[:train_batch_nums*batch_size]
     eval_files = eval_files[:eval_batch_nums*batch_size]
 
-    train_set = NotaGenDataset(train_files)
-    eval_set = NotaGenDataset(eval_files)
+    train_set = NotaGenDataset(train_files, DATA_ROOT, pitch_shift_range=(0, 0), split="train")
+    eval_set = NotaGenDataset(eval_files, DATA_ROOT, pitch_shift_range=(0, 0), split="eval")
 
     train_sampler = DistributedSampler(train_set, num_replicas=world_size, rank=local_rank)
     eval_sampler = DistributedSampler(eval_set, num_replicas=world_size, rank=local_rank)
@@ -338,70 +319,84 @@ if __name__ == "__main__":
     model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
+    pre_epoch = 0
+    best_epoch = 0
+    min_eval_loss = 100
+
     if not LOAD_FROM_CHECKPOINT:
         if os.path.exists(PRETRAINED_PATH):
             # Load pre-trained checkpoint to CPU
             checkpoint = torch.load(PRETRAINED_PATH, map_location='cpu')
-    
-            # Here, model is assumed to be on GPU
-            # Load state dict to CPU model first, then move the model to GPU
-            if torch.cuda.device_count() > 1:
-                # If you have a DataParallel model, you need to load to model.module instead
-                cpu_model = deepcopy(original_model.module)
-                cpu_model.load_state_dict(checkpoint['model'])
-                original_model.module.load_state_dict(cpu_model.state_dict())
-            else:
-                # Load to a CPU clone of the model, then load back
-                cpu_model = deepcopy(original_model)
-                cpu_model.load_state_dict(checkpoint['model'])
-                original_model.load_state_dict(cpu_model.state_dict())
-                
             print(f"Successfully Loaded Pretrained Checkpoint at Epoch {checkpoint['epoch']} with Loss {checkpoint['min_eval_loss']}")
 
-            pre_epoch = 0
+            # Use robust DDP-aware loading, load DIRECTLY into model
+            state_dict = checkpoint['model']
+            if any(key.startswith('module.') for key in state_dict.keys()):
+                from collections import OrderedDict
+                new_state_dict = OrderedDict()
+                for k, v in state_dict.items():
+                    name = k[7:] # remove `module.`
+                    new_state_dict[name] = v
+                model.load_state_dict(new_state_dict) # Load into model
+            else:
+                model.load_state_dict(state_dict) # Load into model
+            
+            # We are starting finetuning, so reset epochs
+            pre_epoch = 0 
             best_epoch = 0
-            min_eval_loss = 100
+            min_eval_loss = 100 # Reset loss
+            
+            del checkpoint, state_dict # Free up memory
+            gc.collect()
+            torch.cuda.empty_cache()
+            print("Successfully Loaded Pretrained Weights into Custom Model")
         else:
             raise Exception('Pre-trained Checkpoint not found. Please check your pre-trained ckpt path.')
-        
-        # Copy the weights of the original model to the custom model
-        model = copy_weights(original_model, model)
-        # Delete the original model to free up memory
-        del original_model, cpu_model, checkpoint
-        torch.cuda.empty_cache()
-        print("Weights Copied from Original Model to Custom Model")
             
-    else:
+    else: # This is your logic for resuming finetuning, which is correct
         if os.path.exists(WEIGHTS_PATH):
             # Load checkpoint to CPU
             checkpoint = torch.load(WEIGHTS_PATH, map_location='cpu')
-    
-            # Here, model is assumed to be on GPU
-            # Load state dict to CPU model first, then move the model to GPU
-            if torch.cuda.device_count() > 1:
-                # If you have a DataParallel model, you need to load to model.module instead
-                cpu_model = deepcopy(model.module)
-                cpu_model.load_state_dict(checkpoint['model'])
-                model.module.load_state_dict(cpu_model.state_dict())
+            
+            # Use robust DDP-aware loading for the model
+            state_dict = checkpoint['model']
+            if any(key.startswith('module.') for key in state_dict.keys()):
+                from collections import OrderedDict
+                new_state_dict = OrderedDict()
+                for k, v in state_dict.items():
+                    name = k[7:] # remove `module.`
+                    new_state_dict[name] = v
+                model.load_state_dict(new_state_dict)
             else:
-                # Load to a CPU clone of the model, then load back
-                cpu_model = deepcopy(model)
-                cpu_model.load_state_dict(checkpoint['model'])
-                model.load_state_dict(cpu_model.state_dict())
+                model.load_state_dict(state_dict)
+                
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_sched'])
             pre_epoch = checkpoint['epoch']
             best_epoch = checkpoint['best_epoch']
             min_eval_loss = checkpoint['min_eval_loss']
-            print("Successfully Loaded Checkpoint from Epoch %d" % pre_epoch)
-            checkpoint = None
-
+            print(f"Successfully Loaded Finetune Checkpoint from Epoch {pre_epoch}")
+            
+            del checkpoint, state_dict # Free up memory
+            gc.collect()
+            torch.cuda.empty_cache()
         else:
             raise Exception('Checkpoint not found to continue training. Please check your parameter settings.')
 
-    # Use DDP for distributed training
+    # Now move the fully configured model to the correct GPU device
+    model = model.to(device)
+
+    # Move optimizer state to the correct GPU device
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.to(device)
+
+    # Finally, wrap the model with DDP
     if world_size > 1:
         model = DDP(model, device_ids=[local_rank], output_device=local_rank,  find_unused_parameters=True)
+
+    # --- END: Updated Code Block ---
 
     for epoch in range(1+pre_epoch, NUM_EPOCHS+1):
         train_sampler.set_epoch(epoch)

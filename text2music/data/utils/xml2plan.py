@@ -2,6 +2,7 @@ import partitura as pt
 import xml.etree.ElementTree as ET
 from typing import Dict, Optional
 import random
+import pickle
 # Ignore user warnings
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -714,8 +715,13 @@ def convert_plan_to_text(data, pitch_shift: int = 0):
         lines.append("")  # Blank line between measures
     return "\n".join(lines)
 
-def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0):
+def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre: str = None):
     lines = []
+
+    # Add genre if provided
+    if genre:
+        lines.append(f"Genre: {genre}")
+        lines.append("")
 
     # Add header with all instruments
     lines.append("Instruments: " + ", ".join(all_instruments))
@@ -786,7 +792,7 @@ def get_text_from_xml(musicxml_file: str, pitch_shift: int = 0):
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
     return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
 
-def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0):
+def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None):
     """
     Extracts text representation from a pickled full plan file.
 
@@ -796,13 +802,12 @@ def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0):
     Returns:
         A string containing the text representation of the measures.
     """
-    import pickle
     with open(pkl_file, 'rb') as f:
         full_plan = pickle.load(f)
     
     top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=5)
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
-    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift)
+    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift, genre=genre)
 
 def get_full_plan_text(pkl_file: str, pitch_shift: int = 0):
     """
