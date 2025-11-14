@@ -92,7 +92,7 @@ class Patchilizer:
         """
         Encode a plan into a sequence of tokens.
         """
-        plan = self.encoder_tokenizer(plan, return_tensors="pt", padding=True, truncation=True).input_ids
+        plan = self.encoder_tokenizer(plan, return_tensors="pt", padding=True, truncation=True, max_length=4096).input_ids
         plan = plan.squeeze(0)
         return plan
         

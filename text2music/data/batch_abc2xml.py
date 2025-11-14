@@ -1,5 +1,5 @@
-ORI_FOLDER = "/data/home/acw769/text2score/text2music/inference/output/interleaved/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
-DES_FOLDER = "/data/home/acw769/text2score/text2music/inference/output/xml/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
+ORI_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/abc/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
+DES_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/xml/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
 
 import os
 import math

@@ -87,4 +87,4 @@ cython_debug/
 artifacts/*
 
 # Output folder
-text2music/inference/output/*
+text2music/artifacts/output/*

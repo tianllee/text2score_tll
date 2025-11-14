@@ -282,97 +282,279 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 if __name__ == '__main__':
 
     plan = """
-Instruments: Violin, Violin 2, Viola, Classical Guitar
+Genre: classical
+
+Instruments: Piano, Voice
 
 Measure: 1
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 38–81
-  Note Density: 36
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
+  Instruments: Piano
+  Pitch Range: 37–69
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1, 5], [1, 8]
 
 Measure: 2
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 50–86
-  Note Density: 55
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: None
+  Instruments: Piano
+  Pitch Range: 37–70
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [6, 10, 1], [6, 10], [6, 1]
 
 Measure: 3
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 33–81
-  Note Density: 50
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 37–73
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3], [8], [0], [3, 8]
 
 Measure: 4
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 30–78
-  Note Density: 44
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
+  Instruments: Piano, Voice
+  Pitch Range: 37–73
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [5], [1]
 
 Measure: 5
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 37–81
-  Note Density: 46
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2], [2], [2, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 38–75
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [10, 1, 5], [10], [5], [1, 10]
 
 Measure: 6
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 33–83
-  Note Density: 36
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2, 4, 6], [9, 4, 1], [8, 1, 11, 4]
+  Instruments: Piano, Voice
+  Pitch Range: 35–73
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [3, 6, 10], [3], [6], [10]
 
 Measure: 7
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 40–85
-  Note Density: 45
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [11, 4, 6], [1, 11, 4, 6], [1, 4, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 35–77
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3], [0], [3, 6, 8], [8]
 
 Measure: 8
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 42–83
-  Note Density: 42
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [1, 4, 6, 7, 8, 11], [9, 11, 4, 7], [1, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 37–73
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1]
 
 Measure: 9
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 38–81
-  Note Density: 45
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [2, 4, 6, 8, 9], [1, 2], [1, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 33–77
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [6, 10, 1], [10], [1], [6]
 
 Measure: 10
-  Instruments: Violin, Violin 2, Viola, Classical Guitar
-  Pitch Range: 38–83
-  Note Density: 46
-  Tempo: 76 BPM
-  Time Signature: 3/4
-  Key Signature: 2
-  Chords: [9, 2, 4], [9, 2, 11, 4], [1, 4, 6, 8, 9, 11]
+  Instruments: Piano, Voice
+  Pitch Range: 33–77
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3, 6], [0], [3], [8]
+
+Measure: 11
+  Instruments: Piano, Voice
+  Pitch Range: 37–78
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [5, 8, 0], [5], [0], [5, 8]
+
+Measure: 12
+  Instruments: Piano, Voice
+  Pitch Range: 38–77
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [10, 1, 5], [10], [1], [5]
+
+Measure: 13
+  Instruments: Piano, Voice
+  Pitch Range: 35–77
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [3, 6, 10], [3, 10], [6]
+
+Measure: 14
+  Instruments: Piano, Voice
+  Pitch Range: 35–77
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3], [8, 3], [0]
+
+Measure: 15
+  Instruments: Piano, Voice
+  Pitch Range: 37–80
+  Note Density: 7.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [8, 0, 3, 6], [0]
+
+Measure: 16
+  Instruments: Piano, Voice
+  Pitch Range: 37–77
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1]
+
+Measure: 17
+  Instruments: Piano, Voice
+  Pitch Range: 37–80
+  Note Density: 7.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8, 0], [1], [5], [8]
+
+Measure: 18
+  Instruments: Piano, Voice
+  Pitch Range: 33–80
+  Note Density: 7.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [3, 6, 10], [3, 6], [10, 3]
+
+Measure: 19
+  Instruments: Piano, Voice
+  Pitch Range: 35–82
+  Note Density: 7.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3], [8], [0, 3, 8], [3]
+
+Measure: 20
+  Instruments: Piano, Voice
+  Pitch Range: 38–80
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [10, 1, 5], [10], [1, 5]
+
+Measure: 21
+  Instruments: Piano, Voice
+  Pitch Range: 33–82
+  Note Density: 8.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [6, 10, 1], [6], [10], [1, 6]
+
+Measure: 22
+  Instruments: Piano, Voice
+  Pitch Range: 37–82
+  Note Density: 7.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1, 5], [8]
+
+Measure: 23
+  Instruments: Piano, Voice
+  Pitch Range: 35–84
+  Note Density: 8.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [3, 6, 10, 0], [3], [6], [10]
+
+Measure: 24
+  Instruments: Piano, Voice
+  Pitch Range: 35–85
+  Note Density: 8.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3, 6], [8], [0], [3]
+
+Measure: 25
+  Instruments: Piano, Voice
+  Pitch Range: 37–82
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1], [5], [8, 1]
+
+Measure: 26
+  Instruments: Piano, Voice
+  Pitch Range: 33–80
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [6, 10, 1], [6], [10]
+
+Measure: 27
+  Instruments: Piano, Voice
+  Pitch Range: 37–78
+  Note Density: 6.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [5], [1, 8]
+
+Measure: 28
+  Instruments: Piano, Voice
+  Pitch Range: 35–77
+  Note Density: 5.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [8, 0, 3], [8], [3]
+
+Measure: 29
+  Instruments: Piano, Voice
+  Pitch Range: 37–73
+  Note Density: 4.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1], [5]
+
+Measure: 30
+  Instruments: Piano
+  Pitch Range: 25–69
+  Note Density: 3.0
+  Tempo: 100 BPM
+  Time Signature: 4/4
+  Key Signature: -5
+  Chords: [1, 5, 8], [1]
 """
 
     inference_patch(plan, [], 1)

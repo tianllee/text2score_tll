@@ -1,8 +1,8 @@
 import os
 
 # Configuration for the data
-DATA_TRAIN_INDEX_PATH = "text2music/data/train.jsonl" 
-DATA_EVAL_INDEX_PATH  = "text2music/data/validation.jsonl"
+DATA_TRAIN_INDEX_PATH = "text2music/data/train_with_genres.jsonl" 
+DATA_EVAL_INDEX_PATH  = "text2music/data/validation_with_genres.jsonl"
 DATA_ROOT = "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/"               # Root directory for the data
 
 # Configuration for the model

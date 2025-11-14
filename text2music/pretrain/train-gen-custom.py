@@ -150,6 +150,7 @@ class NotaGenDataset(Dataset):
 
         filepath = self.filenames[idx]['path']
         filepath = os.path.join(self.data_root, filepath)
+        genre = self.filenames[idx].get('genre', None)
 
         pitch_shift = 0 if self.pitch_shift_range == (0, 0) else random.randint(*self.pitch_shift_range)
         abc_text = read_abci_with_pitch_shift(filepath, pitch_shift=pitch_shift)  # 10 ms
@@ -159,7 +160,7 @@ class NotaGenDataset(Dataset):
             with open(pkl_path, 'rb') as f:
                 plan = pickle.load(f)
 
-            plan = get_full_plan_text(pkl_path, pitch_shift=pitch_shift)
+            plan = get_full_plan_text(pkl_path, pitch_shift=pitch_shift, genre=genre)
             # Encode the plan text
             file_plan = patchilizer.encode_plan(plan)
         else:
@@ -328,7 +329,7 @@ if __name__ == "__main__":
         lr_scheduler.load_state_dict(checkpoint['lr_sched'])
         pre_epoch = checkpoint['epoch']
         best_epoch = checkpoint['best_epoch']
-        min_eval_loss = checkpoint['min_eval_loss']
+        # min_eval_loss = checkpoint['min_eval_loss']
         print(f"Successfully Loaded Checkpoint from Epoch {pre_epoch}")
         del checkpoint, state_dict # Free up memory
         gc.collect()

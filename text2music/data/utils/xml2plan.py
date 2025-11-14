@@ -669,13 +669,18 @@ def get_consecutive_measures(full_plan, top_priority_measures):
 
     return consecutive_measures
 
-def convert_plan_to_text(data, pitch_shift: int = 0):
+def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None):
     # Remove all_instruments from full_plan to avoid confusion
     if 'all_instruments' in data:
         all_instruments = data['all_instruments']
         del data['all_instruments']
 
     lines = []
+
+    # Add genre if provided
+    if genre:
+        lines.append(f"Genre: {genre}")
+        lines.append("")
 
     # Add header with all instruments
     lines.append("Instruments: " + ", ".join(all_instruments))
@@ -715,8 +720,13 @@ def convert_plan_to_text(data, pitch_shift: int = 0):
         lines.append("")  # Blank line between measures
     return "\n".join(lines)
 
-def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre: str = None):
+def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre: str = None, plan_length: int = None):
     lines = []
+
+    # Add total measures
+    total_measures = plan_length if plan_length is not None else len(data)
+    lines.append(f"Total Measures: {total_measures}")
+    lines.append("")
 
     # Add genre if provided
     if genre:
@@ -804,12 +814,15 @@ def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None
     """
     with open(pkl_file, 'rb') as f:
         full_plan = pickle.load(f)
+
+    # Get length of full_plan excluding 'all_instruments'
+    plan_length = len(full_plan) - 1 if 'all_instruments' in full_plan else len(full_plan)
     
     top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=5)
     consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
-    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift, genre=genre)
+    return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift, genre=genre, plan_length=plan_length)
 
-def get_full_plan_text(pkl_file: str, pitch_shift: int = 0):
+def get_full_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None):
     """
     Extracts text representation from a pickled full plan file.
 
@@ -823,7 +836,7 @@ def get_full_plan_text(pkl_file: str, pitch_shift: int = 0):
     with open(pkl_file, 'rb') as f:
         full_plan = pickle.load(f)
     
-    return convert_plan_to_text(full_plan, pitch_shift=pitch_shift)
+    return convert_plan_to_text(full_plan, pitch_shift=pitch_shift, genre=genre)
 
 
 if __name__ == "__main__":
