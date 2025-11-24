@@ -1,12 +1,13 @@
-ORI_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/abc/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
-DES_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/xml/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
-
 import os
 import math
+import shutil
 import random
 import subprocess
 from tqdm import tqdm
 from multiprocessing import Pool
+
+ORI_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
+DES_FOLDER = "./text2music/artifacts/output/xml/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
 
 def convert_abc2xml(file_list):
     cmd = 'python text2music/data/utils/abc_helper/abc2xml.py '
@@ -33,6 +34,11 @@ def convert_abc2xml(file_list):
             pass
 
 if __name__ == '__main__':
+    # Clear and recreate the destination folder
+    if os.path.exists(DES_FOLDER):
+        shutil.rmtree(DES_FOLDER)
+    os.makedirs(DES_FOLDER, exist_ok=True)
+    
     file_list = []
     os.makedirs("logs", exist_ok=True)
 

@@ -1,13 +1,14 @@
 import os
 import re
+import shutil
 import math
 import random
 from tqdm import tqdm
 from multiprocessing import Pool
 
 # ====== CONFIG ======
-ORI_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/interleaved/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"  # Folder containing .abci files
-DES_FOLDER = "/data/home/acw769/text2score/text2music/artifacts/output/abc/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_0.0001_batch_8_k_9_p_0.9_temp_1.2"   # Output folder for converted .abc files
+ORI_FOLDER = "./text2music/artifacts/output/interleaved/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"  # Folder containing .abci files
+DES_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"   # Output folder for converted .abc files
 
 # ====== FUNCTION ======
 def convert_abci_to_abc(file_list):
@@ -46,7 +47,11 @@ def convert_abci_to_abc(file_list):
 
 # ====== MAIN ======
 if __name__ == '__main__':
+    # Clear and recreate the destination folder
+    if os.path.exists(DES_FOLDER):
+        shutil.rmtree(DES_FOLDER)
     os.makedirs(DES_FOLDER, exist_ok=True)
+
     os.makedirs("logs", exist_ok=True)
 
     # Collect all .abci files
