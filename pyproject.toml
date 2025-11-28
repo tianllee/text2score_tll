@@ -24,7 +24,8 @@ dependencies = [
     "mido",
     "jellyfish",
     "unidecode",
-    "rapidfuzz"
+    "rapidfuzz",
+    "pyaml"
 ]
 
 [tool.setuptools.packages.find]

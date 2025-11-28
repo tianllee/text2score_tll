@@ -754,105 +754,209 @@ def get_consecutive_measures(full_plan, top_priority_measures):
 
     return consecutive_measures
 
-def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None):
-    # Remove all_instruments from full_plan to avoid confusion
-    if 'all_instruments' in data:
-        all_instruments = data['all_instruments']
-        del data['all_instruments']
+def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None, plan_length: int = None):
+    """
+    Converts the plan dictionary to text.
+    - Updated to handle dynamics as a list of strings.
+    """
+    
+    # 1. Safely extract metadata
+    all_instruments = data.get('all_instruments', [])
+    
+    # 2. Determine total measures
+    if plan_length is None:
+        # Count keys that look like "Measure: X"
+        measure_keys = [k for k in data.keys() if k.startswith("Measure")]
+        total_measures = len(measure_keys)
+    else:
+        total_measures = plan_length
 
     lines = []
 
-    # Add genre if provided
+    # 3. Build Header
+    lines.append(f"Total Measures: {total_measures}")
+    lines.append("")
+
     if genre:
         lines.append(f"Genre: {genre}")
         lines.append("")
 
-    # Add header with all instruments
-    lines.append("Instruments: " + ", ".join(all_instruments))
+    inst_str = ", ".join(sorted(list(all_instruments))) if all_instruments else "None"
+    lines.append(f"Instruments: {inst_str}")
     lines.append("")
 
-    # Iterate through data.items() and add pitch shift to pitch range, key signature, and chords
-    for measure, details in data.items():
-        # Adjust pitch range with pitch shift
-        if details['pitch_range']['min'] is not None:
-            details['pitch_range']['min'] += pitch_shift
-        if details['pitch_range']['max'] is not None:
-            details['pitch_range']['max'] += pitch_shift
-        
-        # Adjust key signature with pitch shift
-        if details['key_signature'] is not None:
-            details['key_signature'] += pitch_shift
-        
-        # Adjust chords with pitch shift
-        if details['chords']:
-            chords = [[i + pitch_shift for i in chord] for chord in details['chords']]
-            details['chords'] = chords
-            
+    # 4. Helper to sort measures numerically
+    def measure_sort_key(k):
+        try:
+            return int(k.split(': ')[1])
+        except (IndexError, ValueError):
+            return float('inf')
 
-    for measure, details in data.items():
-        lines.append(f"{measure}")
-        lines.append(f"  Instruments: {', '.join(details['instruments'])}")
-        lines.append(f"  Pitch Range: {details['pitch_range']['min']}–{details['pitch_range']['max']}")
-        lines.append(f"  Note Density: {details['note_density']}")
-        lines.append(f"  Tempo: {details['tempo']} BPM" if details['tempo'] is not None else "  Tempo: None")
-        lines.append(f"  Time Signature: {details['time_signature']}")
-        lines.append(f"  Key Signature: {details['key_signature']}")
-        chords = [f"[{', '.join(map(str, chord))}]" for chord in details['chords']]
-        if not chords:
-            lines.append("  Chords: None")
+    sorted_keys = sorted([k for k in data.keys() if k != 'all_instruments'], key=measure_sort_key)
+
+    # 5. Process Measures
+    for measure_key in sorted_keys:
+        details = data[measure_key]
+        
+        # --- Density Mapping ---
+        density_val = details.get('note_density', 0)
+        if density_val <= 4:
+            density_str = "Low"
+        elif density_val <= 10:
+            density_str = "Moderate"
         else:
-            lines.append(f"  Chords: {', '.join(chords)}")
-        lines.append("")  # Blank line between measures
+            density_str = "High"
+
+        # --- Pitch Shifting ---
+        p_min = details['pitch_range']['min']
+        p_max = details['pitch_range']['max']
+        if p_min is not None and p_max is not None:
+            range_str = f"{p_min + pitch_shift}–{p_max + pitch_shift}"
+        else:
+            range_str = "None"
+        
+        ks = details.get('key_signature')
+        ks_str = str(ks + pitch_shift) if ks is not None else "None"
+        
+        raw_chords = details.get('chords', [])
+        chord_strs = []
+        if raw_chords:
+            for chord in raw_chords:
+                shifted_chord = [(n + pitch_shift) % 12 for n in chord] 
+                shifted_chord.sort()
+                chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
+        
+        chords_line = ", ".join(chord_strs) if chord_strs else "None"
+
+        tempo_val = details.get('tempo')
+        tempo_str = f"{tempo_val} BPM" if tempo_val is not None else "None"
+        
+        ts_str = details.get('time_signature')
+        if ts_str is None: ts_str = "None"
+
+        meas_inst_str = ", ".join(details.get('instruments', []))
+
+        # --- Append to output ---
+        lines.append(f"{measure_key}")
+        lines.append(f"  Instruments: {meas_inst_str}")
+        lines.append(f"  Pitch Range: {range_str}")
+        lines.append(f"  Note Density: {density_str}")
+        lines.append(f"  Tempo: {tempo_str}")
+        lines.append(f"  Time Signature: {ts_str}")
+        lines.append(f"  Key Signature: {ks_str}")
+        lines.append(f"  Chords: {chords_line}")
+        
+        # --- UPDATED DYNAMICS HANDLING ---
+        if 'dynamics' in details and details['dynamics']:
+            dyn_data = details['dynamics']
+            dyn_strs = []
+            for d in dyn_data:
+                # Robust check: if it's a dict (old pipeline), format it. If string, use as is.
+                if isinstance(d, dict):
+                     dyn_strs.append(f"{d.get('value', '')} (at {d.get('onset', '?')})")
+                else:
+                     dyn_strs.append(str(d))
+            
+            lines.append(f"  Dynamics: {', '.join(dyn_strs)}")
+
+        lines.append("")
+
     return "\n".join(lines)
 
+
 def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre: str = None, plan_length: int = None):
+    """
+    Converts a subset of measures to text.
+    - Updated to handle dynamics as a list of strings.
+    """
     lines = []
 
-    # Add total measures
     total_measures = plan_length if plan_length is not None else len(data)
     lines.append(f"Total Measures: {total_measures}")
     lines.append("")
 
-    # Add genre if provided
     if genre:
         lines.append(f"Genre: {genre}")
         lines.append("")
 
-    # Add header with all instruments
-    lines.append("Instruments: " + ", ".join(all_instruments))
+    if isinstance(all_instruments, list):
+        inst_str = ", ".join(sorted(list(set(all_instruments))))
+    else:
+        inst_str = str(all_instruments)
+    lines.append(f"Instruments: {inst_str}")
     lines.append("")
 
-    # Iterate through data.items() and add pitch shift to pitch range, key signature, and chords
-    for measure, details in data.items():
-        # Adjust pitch range with pitch shift
-        if details['pitch_range']['min'] is not None:
-            details['pitch_range']['min'] += pitch_shift
-        if details['pitch_range']['max'] is not None:
-            details['pitch_range']['max'] += pitch_shift
-        
-        # Adjust key signature with pitch shift
-        if details['key_signature'] is not None:
-            details['key_signature'] += pitch_shift
-        
-        # Adjust chords with pitch shift
-        if details['chords']:
-            chords = [[i + pitch_shift for i in chord] for chord in details['chords']]
-            details['chords'] = chords
-            
+    def measure_sort_key(k):
+        try:
+            return int(k.split(': ')[1])
+        except (IndexError, ValueError):
+            return float('inf')
 
-    for measure, details in data.items():
-        lines.append(f"{measure}")
-        lines.append(f"  Instruments: {', '.join(details['instruments'])}")
-        lines.append(f"  Pitch Range: {details['pitch_range']['min']}–{details['pitch_range']['max']}")
-        lines.append(f"  Note Density: {details['note_density']}")
-        lines.append(f"  Tempo: {details['tempo']} BPM" if details['tempo'] is not None else "  Tempo: None")
-        lines.append(f"  Time Signature: {details['time_signature']}")
-        chords = [f"[{', '.join(map(str, chord))}]" for chord in details['chords']]
-        if not chords:
-            lines.append("  Chords: None")
+    sorted_keys = sorted(data.keys(), key=measure_sort_key)
+
+    for measure_key in sorted_keys:
+        details = data[measure_key]
+
+        density_val = details.get('note_density', 0)
+        if density_val <= 4:
+            density_str = "Low"
+        elif density_val <= 10:
+            density_str = "Moderate"
         else:
-            lines.append(f"  Chords: {', '.join(chords)}")
-        lines.append("")  # Blank line between measures
+            density_str = "High"
+
+        p_min = details['pitch_range']['min']
+        p_max = details['pitch_range']['max']
+        if p_min is not None and p_max is not None:
+            range_str = f"{p_min + pitch_shift}–{p_max + pitch_shift}"
+        else:
+            range_str = "None"
+        
+        raw_chords = details.get('chords', [])
+        chord_strs = []
+        if raw_chords:
+            for chord in raw_chords:
+                shifted_chord = [(n + pitch_shift) % 12 for n in chord]
+                shifted_chord.sort()
+                chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
+        
+        chords_line = ", ".join(chord_strs) if chord_strs else "None"
+
+        tempo_val = details.get('tempo')
+        tempo_str = f"{tempo_val} BPM" if tempo_val is not None else "None"
+        
+        ts_str = details.get('time_signature')
+        if ts_str is None: ts_str = "None"
+
+        meas_inst = details.get('instruments', [])
+        meas_inst_str = ", ".join(meas_inst) if meas_inst else "None"
+
+        ks = details.get('key_signature')
+        ks_str = str(ks + pitch_shift) if ks is not None else "None"
+
+        lines.append(f"{measure_key}")
+        lines.append(f"  Instruments: {meas_inst_str}")
+        lines.append(f"  Pitch Range: {range_str}")
+        lines.append(f"  Note Density: {density_str}")
+        lines.append(f"  Tempo: {tempo_str}")
+        lines.append(f"  Time Signature: {ts_str}")
+        lines.append(f"  Key Signature: {ks_str}") 
+        lines.append(f"  Chords: {chords_line}")
+
+        # --- UPDATED DYNAMICS HANDLING ---
+        if 'dynamics' in details and details['dynamics']:
+            dyn_data = details['dynamics']
+            dyn_strs = []
+            for d in dyn_data:
+                if isinstance(d, dict):
+                     dyn_strs.append(f"{d.get('value', '')} (at {d.get('onset', '?')})")
+                else:
+                     dyn_strs.append(str(d))
+            
+            lines.append(f"  Dynamics: {', '.join(dyn_strs)}")
+
+        lines.append("")
+
     return "\n".join(lines)
 
 def get_full_plan_pipeline(musicxml_file: str):
@@ -920,8 +1024,11 @@ def get_full_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None):
     import pickle
     with open(pkl_file, 'rb') as f:
         full_plan = pickle.load(f)
+
+    # Get length of full_plan excluding 'all_instruments'
+    plan_length = len(full_plan) - 1 if 'all_instruments' in full_plan else len(full_plan)
     
-    return convert_plan_to_text(full_plan, pitch_shift=pitch_shift, genre=genre)
+    return convert_plan_to_text(full_plan, pitch_shift=pitch_shift, genre=genre, plan_length=plan_length)
 
 
 if __name__ == "__main__":

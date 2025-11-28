@@ -298,8 +298,9 @@ if __name__ == "__main__":
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 
-    # model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
     model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
+    # print parameter number
+    print("Parameter Number: "+str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
     lr_scheduler = get_constant_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=1000)
     scaler = GradScaler()
