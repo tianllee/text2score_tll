@@ -14,8 +14,8 @@ PATCH_NUM_LAYERS = 20                                           # Number of laye
 HIDDEN_SIZE = 768                                               # Hidden Size
 
 # Configuration for the training
-BATCH_SIZE = 24         
-LEARNING_RATE = 2e-4   
+BATCH_SIZE = 16         
+LEARNING_RATE = 1e-4   
 NUM_EPOCHS = 30                                                 # Number of epochs to train for (if early stopping doesn't intervene)
 ACCUMULATION_STEPS = 1                                          # Accumulation steps to simulate large batch size
 PATCH_SAMPLING_BATCH_SIZE = 0                                   # Batch size for patch during training, 0 for full conaudio
