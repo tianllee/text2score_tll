@@ -14,6 +14,8 @@ license = {file = "LICENSE"}
 
 # Dependencies
 dependencies = [
+    "transformers",
+    "accelerate",
     "wandb",
     "samplings==0.1.7",
     "pyparsing==3.2.1",

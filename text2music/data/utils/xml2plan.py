@@ -3,10 +3,23 @@ import xml.etree.ElementTree as ET
 from typing import Dict, Optional
 import random
 import pickle
+import math
 # Ignore user warnings
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
+
+def safe_int_or_none(value):
+    """Safely converts a value to int. Returns None if value is NaN, None, or invalid."""
+    try:
+        if value is None:
+            return None
+        # Check for NaN (float('nan') != float('nan'))
+        if isinstance(value, float) and value != value:
+            return None
+        return int(value)
+    except (ValueError, TypeError):
+        return None
 
 def find_tempo_in_measure(measure_element: ET.Element) -> Optional[int]:
     """Checks for tempo markings within a single measure element."""
@@ -82,12 +95,7 @@ def extract(filepath: str) -> Dict[int, Optional[int]]:
 def get_raw_xml_info(musicxml_file: str, verbose: bool = False) -> list:
     """
     Extracts raw XML information from a MusicXML file.
-
-    Args:
-        musicxml_file: The path to the MusicXML file.
-
-    Returns:
-        A list containing the raw XML information.
+    Returns None for missing/NaN values instead of defaults.
     """
     
     # Load the score
@@ -100,33 +108,30 @@ def get_raw_xml_info(musicxml_file: str, verbose: bool = False) -> list:
 
         part_name = part.part_name
         if not part_name:
-            # Assign piano as default part name if not specified
             part_name = f"Piano {i+1}" if i > 0 else "Piano"
 
         for p in data:
             n = 1
             if p['part_name'] == part_name:
-                # If part name already exists, increment the part number
                 part_name += f" {n+1}"
-                # Check if new part name already exists
                 while any(p['part_name'] == part_name for p in data):
                     n += 1
                     part_name = f"{part.part_name} {n+1}"
         if verbose:
             print(f"Part Name: {part_name}")
 
-        # Define the extended note array with additional fields
         extended_score_note_array = pt.utils.music.ensure_notearray(
             part,
-            include_pitch_spelling=True, # adds 3 fields: step, alter, octave
-            include_key_signature=True, # adds 2 fields: ks_fifths, ks_mode
-            include_time_signature=True, # adds 2 fields: ts_beats, ts_beat_type
-            include_metrical_position=True, # adds 3 fields: is_downbeat, rel_onset_div, tot_measure_div
-            include_grace_notes=True # adds 2 fields: is_grace, grace_type
+            include_pitch_spelling=True,
+            include_key_signature=True,
+            include_time_signature=True,
+            include_metrical_position=True,
+            include_grace_notes=True
         )
 
-        # Get all measures in the part
         measures = list(part.iter_all(pt.score.Measure, include_subclasses=True))
+        part_dynamics = list(part.dynamics)
+
         if verbose:
             print(f"Number of measures in part: {len(measures)}")
 
@@ -136,11 +141,23 @@ def get_raw_xml_info(musicxml_file: str, verbose: bool = False) -> list:
             }
 
         for measure in measures:
-            ts_num = int(part.time_signature_map(measure.start.t)[0])
-            ts_den = int(part.time_signature_map(measure.start.t)[1])
-            ts_beats = int(part.time_signature_map(measure.start.t)[2])
-            ks_fifths = int(part.key_signature_map(measure.start.t)[0])
-            ks_mode = int(part.key_signature_map(measure.start.t)[1])
+            # --- UPDATED: Use safe_int_or_none ---
+            ts_num = safe_int_or_none(part.time_signature_map(measure.start.t)[0])
+            ts_den = safe_int_or_none(part.time_signature_map(measure.start.t)[1])
+            ts_beats = safe_int_or_none(part.time_signature_map(measure.start.t)[2])
+            ks_fifths = safe_int_or_none(part.key_signature_map(measure.start.t)[0])
+            ks_mode = safe_int_or_none(part.key_signature_map(measure.start.t)[1])
+            
+            # Extract Dynamics
+            dynamics_in_measure = []
+            for dynamic in part_dynamics:
+                if measure.start.t <= dynamic.start.t < measure.end.t:
+                    dynamics_in_measure.append({
+                        "text": dynamic.text,
+                        "start_time": dynamic.start.t,
+                        "rel_onset_div": dynamic.start.t - measure.start.t
+                    })
+
             measure_data = {
                     "measure": measure.number,
                     "start_time": measure.start.t,
@@ -150,9 +167,10 @@ def get_raw_xml_info(musicxml_file: str, verbose: bool = False) -> list:
                     "ts_beats": ts_beats,
                     "ks_fifths": ks_fifths,
                     "ks_mode": ks_mode,
-                    "tempo": all_tempos.get(measure.number, None)  # Get tempo for this measure
+                    "tempo": all_tempos.get(measure.number, None),
+                    "dynamics": dynamics_in_measure
                 }
-            # Get all notes in that measure
+            
             notes_in_measure = [n for n in extended_score_note_array if measure.start.t <= n[4] < measure.end.t]
             notes = []
             for n, note in enumerate(notes_in_measure):
@@ -177,6 +195,7 @@ def get_raw_xml_info(musicxml_file: str, verbose: bool = False) -> list:
 def combine_raw_xml_info(data):
     """
     Combines the raw XML information from multiple parts into a single dictionary.
+    Includes an aggregated list of dynamics for each measure across all parts.
 
     Args:
         data: A list of dictionaries containing raw XML information for each part.
@@ -184,9 +203,27 @@ def combine_raw_xml_info(data):
     Returns:
         A combined dictionary with all parts' data.
     """
-    # Combine all measures for all parts into a single measure structure
-    # where each measure contains information from all parts.
+    
+    # 1. Pre-calculate the aggregated dynamics per measure
+    aggregated_dynamics = {}
+    
+    for part_data in data:
+        for measure_data in part_data['measures']:
+            measure_num = measure_data['measure']
+            if measure_num not in aggregated_dynamics:
+                aggregated_dynamics[measure_num] = []
+            
+            # Collect dynamics from this part if they exist
+            # (Assumes get_raw_xml_info has been updated to include 'dynamics')
+            part_dyns = measure_data.get('dynamics', [])
+            aggregated_dynamics[measure_num].extend(part_dyns)
 
+    # 2. Sort the aggregated dynamics chronologically for each measure
+    for measure_num in aggregated_dynamics:
+        # Sort by global start_time to ensure chronological order across parts
+        aggregated_dynamics[measure_num].sort(key=lambda x: x['start_time'])
+
+    # 3. Build the combined structure
     combined_measures = {}
     for part_data in data:
         part_name = part_data['part_name']
@@ -195,6 +232,10 @@ def combine_raw_xml_info(data):
             if f"Measure: {measure_num}" not in combined_measures:
                 combined_measures[f"Measure: {measure_num}"] = {}
             
+            # Retrieve the pre-calculated aggregated list for this measure
+            # We attach this list to every part so it's accessible regardless of which instrument is queried
+            measure_aggregated_dyns = aggregated_dynamics.get(measure_num, [])
+
             combined_measures[f"Measure: {measure_num}"][part_name] = {
                 'info': {
                     'start_time': measure_data['start_time'],
@@ -205,7 +246,8 @@ def combine_raw_xml_info(data):
                     'ks_fifths': measure_data['ks_fifths'],
                     'ks_mode': measure_data['ks_mode'],
                     'tempo': measure_data['tempo'],
-                    'notes': measure_data['notes']
+                    'notes': measure_data['notes'],
+                    'dynamics': measure_aggregated_dyns  # Added aggregated dynamics
                 }
             }
 
@@ -215,37 +257,48 @@ def combine_raw_xml_info(data):
 def get_full_plan(combined_data):
     """
     Generates a full plan from the combined data.
-
-    Args:
-        combined_data: A dictionary containing combined measure data.
-
-    Returns:
-        A dictionary representing the full plan.
+    - Handles NaN values by returning None.
+    - Robustly handles None values during aggregation (e.g. max/min).
     """
+    
+    # Internal helper
+    def safe_int_or_none(value):
+        try:
+            if value is None: return None
+            if isinstance(value, float) and value != value: return None # Check NaN
+            return int(value)
+        except (ValueError, TypeError):
+            return None
 
     plan = {}
     all_instruments = set()
     for measure in combined_data.keys():
         measure_info = combined_data[measure]
-        # Add the measure number to the plan
         plan[measure] = {}
 
-        # Add instruments in this measure to all_instruments
         for instrument in measure_info.keys():
             all_instruments.add(instrument)
 
-        # Add instruments which have notes in this measure
-        plan[measure]['instruments'] = [instrument for instrument in combined_data[measure].keys() if len(combined_data[measure][instrument]['info']['notes']) > 0]
+        plan[measure]['instruments'] = [
+            instrument for instrument in combined_data[measure].keys() 
+            if len(combined_data[measure][instrument]['info']['notes']) > 0
+        ]
         
-        # Add pitch range
+        # --- 1. PITCH RANGE ---
+        # Logic update: Filter out None pitches before calculating min/max
         pitch_ranges = []
         for instrument in plan[measure]['instruments']:
             notes = combined_data[measure][instrument]['info']['notes']
             if notes:
-                pitches = [note['pitch'] for note in notes]
-                max_pitch = max(pitches)
-                min_pitch = min(pitches)
-                pitch_ranges.append((min_pitch, max_pitch))
+                # Get pitches, filtering out any accidental Nones
+                pitches = [safe_int_or_none(note['pitch']) for note in notes]
+                pitches = [p for p in pitches if p is not None]
+                
+                if pitches:
+                    max_pitch = max(pitches)
+                    min_pitch = min(pitches)
+                    pitch_ranges.append((min_pitch, max_pitch))
+                    
         if pitch_ranges:
             plan[measure]['pitch_range'] = {
                 'min': min(p[0] for p in pitch_ranges),
@@ -254,85 +307,117 @@ def get_full_plan(combined_data):
         else:
             plan[measure]['pitch_range'] = {'min': None, 'max': None}
         
-        # Add note density
+        # --- 2. NOTE DENSITY ---
         total_notes = sum(len(combined_data[measure][instrument]['info']['notes']) for instrument in plan[measure]['instruments'])
         if plan[measure]['instruments']:
-            average_notes = total_notes / len(plan[measure]['instruments'])
+            average_notes = float(round(total_notes / len(plan[measure]['instruments']), 2))
         else:
-            average_notes = 0
+            average_notes = 0.0
         plan[measure]['note_density'] = average_notes
         
-        # Add time signature
-        # Assuming all instruments in the measure share the same time signature
+        # --- 3. TIME SIGNATURE ---
+        plan[measure]['time_signature'] = None
         if plan[measure]['instruments']:
             first_instrument = plan[measure]['instruments'][0]
-            ts_num = combined_data[measure][first_instrument]['info']['ts_num']
-            ts_den = combined_data[measure][first_instrument]['info']['ts_den']
-            plan[measure]['time_signature'] = f"{ts_num}/{ts_den}" 
-        else:
-            plan[measure]['time_signature'] = None
+            # Retrieve values (which might be None now)
+            ts_num = safe_int_or_none(combined_data[measure][first_instrument]['info']['ts_num'])
+            ts_den = safe_int_or_none(combined_data[measure][first_instrument]['info']['ts_den'])
+            
+            # Only construct string if both exist
+            if ts_num is not None and ts_den is not None:
+                plan[measure]['time_signature'] = f"{ts_num}/{ts_den}" 
         
-        # Add key signature
+        # --- 4. KEY SIGNATURE ---
         instruments_to_exclude = ['Drum', 'Percussion', 'Drumset', 'Drums', 'Saxophone', 'Clarinet']
-        # Key signature is majority voted across instruments or if piano is present, use its key signature
         plan[measure]['key_signature'] = None
+        
         if 'Piano' in plan[measure]['instruments']:
-            # If Piano is present, use its key signature
-            plan[measure]['key_signature'] = combined_data[measure]['Piano']['info']['ks_fifths']
-        # Else, if there are multiple instruments, use the most common key signature
+            plan[measure]['key_signature'] = safe_int_or_none(combined_data[measure]['Piano']['info']['ks_fifths'])
         elif plan[measure]['instruments']:
-            # Collect key signatures from all instruments, excluding those in instruments_to_exclude
-            # If any of the instruments_to_exclude items is not contained in the instrument name
-            key_signatures = [combined_data[measure][instrument]['info']['ks_fifths'] 
-                              for instrument in plan[measure]['instruments'] 
-                              if not any(excluded in instrument for excluded in instruments_to_exclude)]
+            # Collect signatures, filtering out Nones
+            key_signatures = [
+                safe_int_or_none(combined_data[measure][instrument]['info']['ks_fifths'])
+                for instrument in plan[measure]['instruments'] 
+                if not any(excluded in instrument for excluded in instruments_to_exclude)
+            ]
+            # Remove Nones from the list
+            key_signatures = [k for k in key_signatures if k is not None]
+            
             if key_signatures:
-                # Use the most common key signature
                 plan[measure]['key_signature'] = max(set(key_signatures), key=key_signatures.count)
-            else:
-                plan[measure]['key_signature'] = None
 
-        # Add key mode
-        # Key mode can be first instrument's mode or None if no instruments
+        # --- 5. KEY MODE ---
         first_instrument = plan[measure]['instruments'][0] if plan[measure]['instruments'] else None
         if first_instrument and 'info' in combined_data[measure][first_instrument]:
-            plan[measure]['key_mode'] = combined_data[measure][first_instrument]['info']['ks_mode']
+            plan[measure]['key_mode'] = safe_int_or_none(combined_data[measure][first_instrument]['info']['ks_mode'])
         else:
             plan[measure]['key_mode'] = None
 
-        # Add tempo
-        # Tempo is taken from the first instrument's info, if available
+        # --- 6. TEMPO ---
         if first_instrument and 'info' in combined_data[measure][first_instrument]:
-            plan[measure]['tempo'] = combined_data[measure][first_instrument]['info']['tempo']
+            tempo_val = combined_data[measure][first_instrument]['info']['tempo']
+            plan[measure]['tempo'] = safe_int_or_none(tempo_val)
         else:
             plan[measure]['tempo'] = None
 
-        # Add chord notes
-        # A chord is defined as a set of notes that occur within a beat
-        plan[measure]['chords'] = []
-        if not plan[measure]['instruments']:
-            continue  # Skip measures with no instruments
-        ts_beats = combined_data[measure][first_instrument]['info']['ts_beats']
-        ticks_in_measure = combined_data[measure][first_instrument]['info']['end_time'] - combined_data[measure][first_instrument]['info']['start_time']
-        beats_in_measure = ticks_in_measure / ts_beats
-        for beat in range(ts_beats):
-            chord_notes = []
-            for instrument in plan[measure]['instruments']:
-                notes = combined_data[measure][instrument]['info']['notes']
-                for note in notes:
-                    if note['rel_onset_div'] // beats_in_measure == beat and note['is_grace'] == 0:
-                        note_pitch = note['pitch'] % 12  # Get the pitch class (0-11)
-                        chord_notes.append(note_pitch)
-            if chord_notes:
-                # Remove duplicates and sort
-                chord_notes = set(chord_notes)
-                plan[measure]['chords'].append(chord_notes)
+        # --- 7. DYNAMICS ---
+        plan[measure]['dynamics'] = []
+        if first_instrument and 'info' in combined_data[measure][first_instrument]:
+            raw_dynamics = combined_data[measure][first_instrument]['info'].get('dynamics', [])
+            clean_dynamics = []
+            for d in raw_dynamics:
+                onset = safe_int_or_none(d['rel_onset_div'])
+                if onset is not None:
+                    clean_dynamics.append({'onset': onset, 'value': str(d['text'])})
+            plan[measure]['dynamics'] = clean_dynamics
 
-    # Add all instruments to the plan
+        # --- 8. CHORDS ---
+        plan[measure]['chords'] = []
+        
+        if not plan[measure]['instruments']:
+            continue  
+
+        onset_groups = {}
+
+        for instrument in plan[measure]['instruments']:
+            notes = combined_data[measure][instrument]['info']['notes']
+            for note in notes:
+                if note['is_grace'] == 0:
+                    onset = note['rel_onset_div'] 
+                    
+                    # Check pitch validity before modulo
+                    raw_pitch = safe_int_or_none(note['pitch'])
+                    if raw_pitch is None:
+                        continue
+                        
+                    note_pitch = int(raw_pitch % 12)
+
+                    if onset not in onset_groups:
+                        onset_groups[onset] = set()
+                    
+                    onset_groups[onset].add(note_pitch)
+
+        unique_chords = []
+        seen_chords = set()
+        sorted_onsets = sorted(onset_groups.keys())
+
+        for onset in sorted_onsets:
+            current_chord_set = onset_groups[onset]
+            
+            if len(current_chord_set) < 2:
+                continue
+
+            chord_signature = tuple(sorted(current_chord_set))
+            
+            if chord_signature not in seen_chords:
+                seen_chords.add(chord_signature)
+                unique_chords.append(current_chord_set)
+
+        plan[measure]['chords'] = unique_chords
+
     plan['all_instruments'] = list(all_instruments)
 
     return plan
-
 
 
 def get_top_measures_instrument(full_plan, top_pct=10):
