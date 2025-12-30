@@ -107,14 +107,15 @@ def collate_batch(input_batches):
 
     return input_patches, input_plan, input_masks
 
-
-def split_into_minibatches(input_patches, input_masks, minibatch_size):
+def split_into_minibatches(input_patches, input_plan, input_masks, minibatch_size):
     minibatches = []
     for start_idx in range(0, len(input_patches), minibatch_size):
         end_idx = start_idx + minibatch_size
         minibatch_patches = input_patches[start_idx:end_idx]
+        minibatch_plan = input_plan[start_idx:end_idx]  # Slice the plan
         minibatch_masks = input_masks[start_idx:end_idx]
-        minibatches.append((minibatch_patches, minibatch_masks))
+        # Return plan in the tuple
+        minibatches.append((minibatch_patches, minibatch_plan, minibatch_masks))
     return minibatches
 
 
@@ -175,11 +176,11 @@ class NotaGenDataset(Dataset):
         return file_bytes, file_plan, file_masks
 
 
-def process_one_batch(batch, plan=None):
-    input_patches, input_masks = batch
-    loss = model(plan, input_patches, input_masks).loss
+def process_one_batch(patches, plan, masks):
+    # Direct forward pass
+    loss = model(plan, patches, masks).loss
 
-    # Reduce the loss on GPU 0
+    # Reduce the loss on GPU 0 if using DDP
     if world_size > 1:
         loss = loss.unsqueeze(0)
         dist.reduce(loss, dst=0)
@@ -189,61 +190,73 @@ def process_one_batch(batch, plan=None):
     return loss
 
 
-# do one epoch for training
 def train_epoch(epoch):
     tqdm_train_set = tqdm(train_set)
     total_train_loss = 0
     iter_idx = 1
     model.train()
-    train_steps = (epoch - 1) * len(train_set)
+    
+    # Reset gradients at the start
+    optimizer.zero_grad(set_to_none=True) 
 
-    for batch in tqdm_train_set:
+    for batch_idx, batch in enumerate(tqdm_train_set):
         input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
-        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
-        for minibatch in minibatches:
-            with autocast("cuda"):
-                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
-            scaler.scale(loss).backward()
-            total_train_loss += loss.item()
-        scaler.step(optimizer)
-        scaler.update()
+        
+        # 1. Forward pass
+        with autocast("cuda", dtype=torch.bfloat16):
+            loss = process_one_batch(input_patches, plan, input_masks)
+            
+            # Normalize loss for accumulation
+            loss = loss / ACCUMULATION_STEPS
 
-        lr_scheduler.step()
-        model.zero_grad(set_to_none=True)
-        tqdm_train_set.set_postfix({str(global_rank) + '_train_loss': total_train_loss / iter_idx})
-        train_steps += 1
+        # 2. Backward pass
+        loss.backward()
+        
+        # Track total loss (scaled back up for readable logging)
+        current_loss = loss.item() * ACCUMULATION_STEPS
+        total_train_loss += current_loss
 
-        # Log the training loss to wandb
-        if global_rank == 0 and WANDB_LOGGING:
+        # 3. Step Optimizer only after ACCUMULATION_STEPS
+        if (batch_idx + 1) % ACCUMULATION_STEPS == 0:
+            optimizer.step()
+            lr_scheduler.step()
+            optimizer.zero_grad(set_to_none=True)
+
+        # Update the progress bar with the running average loss
+        tqdm_train_set.set_postfix({"train_loss": total_train_loss / iter_idx})
+
+        # WandB Logging
+        train_steps = (epoch - 1) * len(train_set) + batch_idx
+        if global_rank == 0 and WANDB_LOGGING and (batch_idx + 1) % ACCUMULATION_STEPS == 0:
             wandb.log({"train_loss": total_train_loss / iter_idx}, step=train_steps)
 
         iter_idx += 1
-        # Delete objects containing tensors to free up memory
-        del loss, minibatch, input_patches, input_masks, batch, plan
+        
+        del loss, input_patches, input_masks, batch, plan
         if iter_idx % 5 == 0:
             torch.cuda.empty_cache()
-        #     clear_unused_tensors()
 
     return total_train_loss / (iter_idx - 1)
 
 
-# do one epoch for eval
 def eval_epoch():
     tqdm_eval_set = tqdm(eval_set)
     total_eval_loss = 0
     iter_idx = 1
     model.eval()
 
-    # Evaluate data for one epoch
     for batch in tqdm_eval_set:
         input_patches, plan, input_masks = batch[0].to(device), batch[1].to(device), batch[2].to(device)
-        minibatches = split_into_minibatches(input_patches, input_masks, BATCH_SIZE // ACCUMULATION_STEPS)
-        for minibatch in minibatches:
-            with torch.no_grad():
-                loss = process_one_batch(minibatch, plan) / ACCUMULATION_STEPS
-            total_eval_loss += loss.item()
+        
+        with torch.no_grad():
+            with autocast("cuda", dtype=torch.bfloat16):
+                # No splitting needed, just run the batch
+                loss = process_one_batch(input_patches, plan, input_masks)
+                
+        total_eval_loss += loss.item()
         tqdm_eval_set.set_postfix({str(global_rank) + '_eval_loss': total_eval_loss / iter_idx})
         iter_idx += 1
+        
     return total_eval_loss / (iter_idx - 1)
 
 
@@ -288,13 +301,13 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set,
                            batch_size=batch_size,
                            collate_fn=collate_batch,
-                           num_workers=4,
+                           num_workers=2,
                            sampler=train_sampler,
                            shuffle=(train_sampler is None))
     eval_set = DataLoader(eval_set,
                           batch_size=batch_size,
                           collate_fn=collate_batch,
-                          num_workers=4,
+                          num_workers=2,
                           sampler=eval_sampler,
                           shuffle=(train_sampler is None))
 

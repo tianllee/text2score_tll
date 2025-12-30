@@ -853,7 +853,7 @@ def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None, plan_len
             for d in dyn_data:
                 # Robust check: if it's a dict (old pipeline), format it. If string, use as is.
                 if isinstance(d, dict):
-                     dyn_strs.append(f"{d.get('value', '')} (at {d.get('onset', '?')})")
+                     dyn_strs.append(f"{d.get('value', '')}")
                 else:
                      dyn_strs.append(str(d))
             
@@ -949,7 +949,7 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre:
             dyn_strs = []
             for d in dyn_data:
                 if isinstance(d, dict):
-                     dyn_strs.append(f"{d.get('value', '')} (at {d.get('onset', '?')})")
+                     dyn_strs.append(f"{d.get('value', '')}")
                 else:
                      dyn_strs.append(str(d))
             

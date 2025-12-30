@@ -2,9 +2,6 @@ import os
 from glob import glob
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
-import sys
-import contextlib
-import subprocess
 
 # Import your preprocessor functions
 from text2music.preprocess.abci2abc import convert_abci_list_to_abc
@@ -15,17 +12,17 @@ from text2music.preprocess.xml2plan import convert_xml_list_to_plan_pkl
 # DIRECTORIES CONTAINING .abci FILES
 # -----------------------------------------------------
 ABCI_DIRS = [
-    "/data/ABC_Dataset/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
-    "/data/ABC_Dataset/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/ASAP_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/MS3_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Augmented_Datasets/Wikifonia_Dataset_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Augmented_Datasets/PDMX_MXL_abci/mxl_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Augmented_Datasets/SymphonyNet_Dataset_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Augmented_Datasets/ASAP_MXL_abci",
-    "/data/ABC_Dataset/ABC_Dataset/Augmented_Datasets/MS3_MXL_abci"
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/ABC_Notation_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Wikifonia_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/PDMX_MXL_abci/mxl_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/SymphonyNet_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/ASAP_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/MS3_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/Wikifonia_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/PDMX_MXL_abci/mxl_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/SymphonyNet_Dataset_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/ASAP_MXL_abci",
+    "/data/scratch/eey549/ABC_Dataset/ABC_Dataset/Augmented_Datasets/MS3_MXL_abci"
 ]
 
 # -----------------------------------------------------
@@ -87,9 +84,10 @@ def main():
     print(f"Found {len(abci_files)} .abci files.")
 
     # Setup logs
-    os.makedirs("logs", exist_ok=True)
-    success_log_path = "logs/success_log.txt"
-    failure_log_path = "logs/failure_log.txt"
+    log_folder = os.path.join(PROJECT_ROOT, "preprocess", "logs")
+    os.makedirs(log_folder, exist_ok=True)
+    success_log_path = os.path.join(log_folder, "success_log.txt")
+    failure_log_path = os.path.join(log_folder, "failure_log.txt")
     open(success_log_path, "w").close()
     open(failure_log_path, "w").close()
 
