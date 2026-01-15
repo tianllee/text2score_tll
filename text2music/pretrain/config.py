@@ -22,6 +22,7 @@ PATCH_SAMPLING_BATCH_SIZE = 0                                   # Batch size for
 LOAD_FROM_CHECKPOINT = True                                    # Whether to load weights from a checkpoint
 WANDB_LOGGING = False                                           # Whether to log to wandb
 WANDB_KEY = '<your_wandb_key>'
+DEBUG = False                                                    # Whether to run in debug mode (smaller dataset, more logging)
 
 EXP_TAG = 'pretrain'                                            # Experiment tag for differentiation
 NAME =  EXP_TAG + \

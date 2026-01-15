@@ -851,7 +851,6 @@ def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None, plan_len
             dyn_data = details['dynamics']
             dyn_strs = []
             for d in dyn_data:
-                # Robust check: if it's a dict (old pipeline), format it. If string, use as is.
                 if isinstance(d, dict):
                      dyn_strs.append(f"{d.get('value', '')}")
                 else:
