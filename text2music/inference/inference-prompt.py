@@ -282,39 +282,41 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 def get_inference_plan(user_prompt: str, api_key: str) -> str:
 
     prompt = """
-    You are an assistant music composer that creates structured musical plans based on user descriptions. Your task is to convert the user’s prompt into a measure-wise musical plan that will be fed to a Generative AI model. Instead of a full list of consecutive measures, your task is to generate a more concise plan for the piece based on measures which have significant change. This could be for example in tempo, time and key signature, instrumentation, note density and pitch range.
+    You are an assistant music composer that creates structured musical plans based on user descriptions. Convert the user’s prompt into a concise, measure-wise musical plan highlighting only measures with significant changes (tempo, time/key signature, instrumentation, dynamics, note density, pitch range), rather than listing every consecutive measure.
+    At the top, specify the total number of measures in the piece (use ~30 if not provided). Specify a genre only if explicitly requested and if it matches one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
 
-    At the top, you need to specify the total number of measures in the entire piece. If this is not indicated by the user, a good number may be around 30 measures. Then, you may specify a genre only if explicitly asked in the user's prompt and if it matches the available genres which are as follows: symphony, classical piano, classical, jazz, pop, rock, metal and folk. Following this, you must specify all the instruments present in the piece.
+    Describe each selected measure using:
+    Instruments: MuseScore instrument names and/or voice
+    Pitch Range: lowest–highest MIDI note number across all instruments; use realistic, varied ranges
+    Note Density: Low, Moderate, or High based on notes per instrument considering tempo/time signature
+    Tempo: BPM
+    Time Signature: e.g., 3/4, 4/4, 6/8
+    Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode
+    Chords: lists of unique MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]) representing chords. Use None if no chords are present. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. 
+    Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
 
-    Then, each measure in the plan should be described using the following fields:
-    Instruments: The instruments used (e.g., Piano, Trombone, Voice). We can use all MuseScore instrument names and also voice.
-    Pitch Range: Lowest to highest MIDI note number of the measure, summarized for all instruments as a range. Think about the lowest and highest pitch range of each instrument when calculating this range. Please use a diverse (but realistic) pitch range for every measure.
-    Note Density: Average number of notes per instrument in the measure, summarized for all instruments as a single number. The note density value should consider the total elements in the chord list along with the time signature. For example, a note density of 4 in a time signature of 4/4 may be perceived as few notes whereas a value of 16 may be a lot of notes.
-    Time Signature: Standard Notation (e.g., 3/4, 4/4, 6/8)
-    Key Signature: Number of sharps/flats (e.g., -5 for 5 flats, 2 for 2 sharps). Do not include the mode.
-    Chords: These are not just lists of chord notes but also arpeggios, standalone note pitches as well as appoggiatura and acciaccatura, each expressed as a list of **unique** MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]). They can be single or multiple elements within a list, denoting a single note or multiple notes played within a short duration of time. You may use the these to steer the musical mode (major / minor). **Please use extremely diverse and variable length elements to denote chords / arpeggios / note pitches / grace notes**.
-    You are allowed and expected to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
+    You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
 
     You may generate around 10 structurally important measures with their measure numbers. The measures do not need to be consecutive always but they could be depending on the scope of the user’s description. However, the measure numbers should be lesser than equal to the total measures asked for at the top of the plan.
 
-    Use the following format for the global information:
+    Global format:
     Total Measures: <number>
-    Genre: <string> (Only if indicated and matches with available genres. Otherwise, skip it.)
+    Genre: <string> (only if explicitly requested and valid)
     Instruments: <list>
+
+    Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
 
     Use the following format for each measure:
     Measure: <number>
     Instruments: <list>
     Pitch Range: <min>–<max>
-    Note Density: <float>
+    Note Density: <Low|Moderate|High>
     Tempo: <int> BPM
-    Time Signature: <string> (e.g., 3/4, 4/4, 6/8)
-    Key Signature: <int> (e.g. -5 for 5 flats, 2 for 2 sharps)
-    Chords: [<midi pitch number % 12>, <midi pitch number % 12>], [<midi pitch number % 12>, <midi pitch number % 12>, <midi pitch number % 12>], ...
+    Time Signature: <string>
+    Key Signature: <int>
+    Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ...
 
-    For each measure, every attribute (e.g., 'Instruments:', 'Pitch Range:', 'Note Density:', etc.) must start in a new line, exactly as shown in the example plan below. Always add an empty line before starting a new 'Measure: <number>' line. Avoid natural language explanation or additional commentary and follow the output format exactly.
-
-    Here is an example of a plan for the prompt "Short eerie symphonic music in 4/4 time signature with a moderate tempo":
+    Example 1 (prompt: "Short eerie symphonic music in 4/4 time signature with a moderate tempo"):
 
     Total Measures: 29
 
@@ -325,7 +327,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 1
     Instruments: Violins, Saw Synthesizer
     Pitch Range: 43–66
-    Note Density: 2.0
+    Note Density: Low
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0, 2, 6, 7]
@@ -333,7 +335,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 2
     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
     Pitch Range: 24–67
-    Note Density: 4.25
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0, 3, 7], [0], [0, 3, 7], [0]
@@ -341,7 +343,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 14
     Instruments: Violins, Saw Synthesizer, Timpani
     Pitch Range: 24–84
-    Note Density: 6.0
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0], [0], [0], [0]
@@ -349,7 +351,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 15
     Instruments: Violins, Saw Synthesizer, Timpani
     Pitch Range: 24–84
-    Note Density: 6.333333333333333
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0], [0], [0], [0]
@@ -357,7 +359,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 16
     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
     Pitch Range: 24–67
-    Note Density: 4.25
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0, 3, 7], [0], [0, 3, 7], [0]
@@ -365,7 +367,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 17
     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
     Pitch Range: 24–66
-    Note Density: 4.75
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0, 2, 6], [0], [0, 2, 6], [0, 3]
@@ -373,7 +375,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Measure: 28
     Instruments: Violins, Saw Synthesizer, Timpani
     Pitch Range: 24–84
-    Note Density: 6.0
+    Note Density: Moderate
     Tempo: 124 BPM
     Time Signature: 4/4
     Chords: [0], [0], [0], [0]
@@ -400,6 +402,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     )
 
     plan = completion.choices[0].message.content
+    print("Generated Plan:\n", plan)
 
     return plan
 

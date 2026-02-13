@@ -88,3 +88,5 @@ artifacts/*
 
 # Output folder
 text2music/artifacts/output/*
+text2music/data/train_new.jsonl
+text2music/data/validation_new.jsonl

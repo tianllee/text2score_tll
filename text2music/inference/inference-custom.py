@@ -282,81 +282,101 @@ def inference_patch(plan="", prompt_lines=[], pieces=NUM_SAMPLES):
 if __name__ == '__main__':
 
     plan = """
-Total Measures: 16
+Total Measures: 60
 
-Instruments: Accordion, Violin, Contrabass
+Genre: classical piano
 
-Measure: 1
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 36–78
-Note Density: 5.0
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [0, 4, 7], [0], [7, 0, 4, 11]
+Instruments: Piano
 
-\nMeasure: 4
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 38–82
-Note Density: 6.0
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [9, 0, 4], [9], [4, 7, 9, 0]
+Measure: 2
+  Instruments: Piano
+  Pitch Range: 65–77
+  Note Density: Low
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: None
+  Dynamics: crescendo
 
-\nMeasure: 5
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 40–80
-Note Density: 5.5
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [2, 5, 9], [2], [2, 9, 5, 0, 4]
+Measure: 3
+  Instruments: Piano
+  Pitch Range: 53–80
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [0, 5, 8]
+  Dynamics: diminuendo
 
-\nMeasure: 8
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 36–76
-Note Density: 6.25
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [7, 11, 2], [7], [7, 2, 11, 4]
+Measure: 4
+  Instruments: Piano
+  Pitch Range: 52–79
+  Note Density: Moderate
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [0, 4, 7, 10]
+  Dynamics: crescendo
 
-\nMeasure: 9
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 37–79
-Note Density: 5.75
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [0, 4, 7], [4], [0, 7, 4, 9]
+Measure: 5
+  Instruments: Piano
+  Pitch Range: 52–82
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [0, 4, 7, 10]
+  Dynamics: diminuendo
 
-\nMeasure: 12
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 40–83
-Note Density: 6.0
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [9, 0, 4], [0], [9, 4, 0, 7]
+Measure: 6
+  Instruments: Piano
+  Pitch Range: 53–80
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [0, 5, 8]
+  Dynamics: diminuendo
 
-\nMeasure: 13
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 41–81
-Note Density: 5.5
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [2, 5, 9], [5], [9, 2, 5, 11]
+Measure: 52
+  Instruments: Piano
+  Pitch Range: 55–85
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [1, 3, 7, 10]
+  Dynamics: diminuendo
 
-\nMeasure: 16
-Instruments: Accordion, Violin, Contrabass
-Pitch Range: 36–78
-Note Density: 6.5
-Tempo: 72 BPM
-Time Signature: 4/4
-Key Signature: 0
-Chords: [7, 11, 2], [11], [7, 2, 11, 4, 9]
+Measure: 53
+  Instruments: Piano
+  Pitch Range: 70–82
+  Note Density: Low
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: None
+
+Measure: 54
+  Instruments: Piano
+  Pitch Range: 55–85
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [1, 4, 7, 10]
+  Dynamics: diminuendo
+
+Measure: 55
+  Instruments: Piano
+  Pitch Range: 54–85
+  Note Density: High
+  Tempo: 232 BPM
+  Time Signature: 2/2
+  Key Signature: -4
+  Chords: [1, 4, 6, 10]
+  Dynamics: crescendo
+
 """
 
     inference_patch(plan, [], pieces=NUM_SAMPLES)

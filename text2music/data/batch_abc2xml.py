@@ -6,8 +6,8 @@ import subprocess
 from tqdm import tqdm
 from multiprocessing import Pool
 
-ORI_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
-DES_FOLDER = "./text2music/artifacts/output/xml/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
+ORI_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
+DES_FOLDER = "./text2music/artifacts/output/xml/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
 
 def convert_abc2xml(file_list):
     cmd = 'python text2music/data/utils/abc_helper/abc2xml.py '

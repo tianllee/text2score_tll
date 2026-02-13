@@ -7,8 +7,8 @@ from tqdm import tqdm
 from multiprocessing import Pool
 
 # ====== CONFIG ======
-ORI_FOLDER = "./text2music/artifacts/output/interleaved/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"  # Folder containing .abci files
-DES_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_16_c_layers_3_h_size_768_lr_1e-05_batch_8_k_9_p_0.9_temp_1.2"   # Output folder for converted .abc files
+ORI_FOLDER = "./text2music/artifacts/output/interleaved/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"  # Folder containing .abci files
+DES_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"   # Output folder for converted .abc files
 
 # ====== FUNCTION ======
 def convert_abci_to_abc(file_list):

@@ -16,14 +16,14 @@ HIDDEN_SIZE = 768                                               # Hidden Size
 # Configuration for the training
 BATCH_SIZE = 8         
 LEARNING_RATE = 1e-5   
-NUM_EPOCHS = 15 #64                                                 # Number of epochs to train for (if early stopping doesn't intervene)
+NUM_EPOCHS = 25 #15                                                 # Number of epochs to train for (if early stopping doesn't intervene)
 ACCUMULATION_STEPS = 4                                          # Accumulation steps to simulate large batch size
 PATCH_SAMPLING_BATCH_SIZE = 0                                   # Batch size for patch during training, 0 for full conaudio
 LOAD_FROM_CHECKPOINT = False                                    # Whether to load weights from a checkpoint
 WANDB_LOGGING = False                                           # Whether to log to wandb
 WANDB_KEY = '6b550a00b0715f51d4ec8860fe338c9823a77cf7'
 
-PRETRAINED_PATH = "/data/home/acw769/text2score/weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth"                # Path of pretrained weights
+PRETRAINED_PATH = "/data/home/acw769/text2score/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth"                # Path of pretrained weights
 EXP_TAG = 'finetune'                                            # Experiment tag for name differentiation
 NAME =  EXP_TAG + \
         "_p_size_" + str(PATCH_SIZE) + \
