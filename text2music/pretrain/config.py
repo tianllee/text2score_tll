@@ -16,7 +16,7 @@ HIDDEN_SIZE = 768                                               # Hidden Size
 # Configuration for the training
 BATCH_SIZE = 8         
 LEARNING_RATE = 1e-4   
-NUM_EPOCHS = 30                                                 # Number of epochs to train for (if early stopping doesn't intervene)
+NUM_EPOCHS = 40                                                 # Number of epochs to train for (if early stopping doesn't intervene)
 ACCUMULATION_STEPS = 4                                          # Accumulation steps to simulate large batch size
 PATCH_SAMPLING_BATCH_SIZE = 0                                   # Batch size for patch during training, 0 for full conaudio
 LOAD_FROM_CHECKPOINT = True                                    # Whether to load weights from a checkpoint
@@ -35,7 +35,7 @@ NAME =  EXP_TAG + \
         "_batch_" + str(BATCH_SIZE)
 
 WEIGHTS_PATH = "weights_notagen_" + NAME + ".pth"                  # Path to save weights
-WEIGHTS_PATH = "weights_notagen_pretrain_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth"
+WEIGHTS_PATH = "/data/home/acw769/text2score/text2music/artifacts/logs_notagen_pretrain_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.txt"
 LOGS_PATH    = "logs_notagen_"    + NAME + ".txt"                     # Path to save logs
 LOGS_PATH    = "logs_notagen_pretrain_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.txt" 
 WANDB_NAME = NAME

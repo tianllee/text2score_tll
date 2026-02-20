@@ -4,7 +4,7 @@ import time
 import torch
 from utils import *
 from config import *
-from transformers import GPT2Config, LlamaConfig
+from transformers import GPT2Config
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import Note_list
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
 from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_regexPattern
@@ -73,6 +73,8 @@ def rest_unreduce(abc_lines):
             for round_bracket_match in re.findall(r'\((.*?)\)', line):
                 voice_group_list.append(round_bracket_match.split())
             existed_voices = [item for sublist in voice_group_list for item in sublist]
+        else:
+            existed_voices = []
         if line.startswith('V:'):
             symbol = line.split()[0]
             part_symbol_list.append(symbol)
@@ -283,16 +285,16 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
 
     prompt = """
     You are an assistant music composer that creates structured musical plans based on user descriptions. Convert the user’s prompt into a concise, measure-wise musical plan highlighting only measures with significant changes (tempo, time/key signature, instrumentation, dynamics, note density, pitch range), rather than listing every consecutive measure.
-    At the top, specify the total number of measures in the piece (use ~30 if not provided). Specify a genre only if explicitly requested and if it matches one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
+    At the top, specify the total number of measures in the piece (use ~ 30 to 40 if not provided). Specify a genre only if requested or if it is relevant to one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
 
     Describe each selected measure using:
-    Instruments: MuseScore instrument names and/or voice
+    Instruments: Instruments: MuseScore instrument names and/or voice (e.g., Cello will be Violoncello, Double Bass will be Contrabass, etc. For multiple voices, specify the voice number if possible: e.g., Violin 1, Violin 2, etc.)
     Pitch Range: lowest–highest MIDI note number across all instruments; use realistic, varied ranges
     Note Density: Low, Moderate, or High based on notes per instrument considering tempo/time signature
     Tempo: BPM
-    Time Signature: e.g., 3/4, 4/4, 6/8
-    Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode
-    Chords: lists of unique MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]) representing chords. Use None if no chords are present. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. 
+    Time Signature: e.g., 3/4, 4/4, 6/8; these typically remain constant but can change to reflect musical structure.
+    Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use 0 for C major/A minor, -1 for one flat, +1 for one sharp, etc. These typically remain constant but can change to reflect musical structure.
+    Chords: lists of unique MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]) representing chords. Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. 
     Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
 
     You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
@@ -301,7 +303,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
 
     Global format:
     Total Measures: <number>
-    Genre: <string> (only if explicitly requested and valid)
+    Genre: <string> (only if requested or valid)
     Instruments: <list>
 
     Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
@@ -314,7 +316,7 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     Tempo: <int> BPM
     Time Signature: <string>
     Key Signature: <int>
-    Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ...
+    Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ... or None
 
     Example 1 (prompt: "Short eerie symphonic music in 4/4 time signature with a moderate tempo"):
 
@@ -402,7 +404,6 @@ def get_inference_plan(user_prompt: str, api_key: str) -> str:
     )
 
     plan = completion.choices[0].message.content
-    print("Generated Plan:\n", plan)
 
     return plan
 

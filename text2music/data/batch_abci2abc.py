@@ -5,10 +5,8 @@ import math
 import random
 from tqdm import tqdm
 from multiprocessing import Pool
+import argparse
 
-# ====== CONFIG ======
-ORI_FOLDER = "./text2music/artifacts/output/interleaved/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"  # Folder containing .abci files
-DES_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"   # Output folder for converted .abc files
 
 # ====== FUNCTION ======
 def convert_abci_to_abc(file_list):
@@ -47,6 +45,19 @@ def convert_abci_to_abc(file_list):
 
 # ====== MAIN ======
 if __name__ == '__main__':
+
+    # Define args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--abci_folder', type=str, default="./text2music/artifacts/output/interleaved/", help="Folder containing .abci files")
+    parser.add_argument('--abc_folder', type=str, default="./text2music/artifacts/output/abc/", help="Output folder for converted .abc files")
+    args = parser.parse_args()
+
+    # ====== CONFIG ======
+    # ORI_FOLDER = "./text2music/artifacts/output/interleaved/"  # Folder containing .abci files
+    # DES_FOLDER = "./text2music/artifacts/output/abc/"   # Output folder for converted .abc files
+    ORI_FOLDER = args.abci_folder
+    DES_FOLDER = args.abc_folder
+
     # Clear and recreate the destination folder
     if os.path.exists(DES_FOLDER):
         shutil.rmtree(DES_FOLDER)
@@ -58,6 +69,7 @@ if __name__ == '__main__':
     file_list = []
     for root, dirs, files in os.walk(ORI_FOLDER):
         for file in files:
+            # Ensure we only process .abci files
             if not file.endswith(".abc"):
                 continue
             filename = os.path.join(root, file).replace("\\", "/")
