@@ -4,45 +4,85 @@ import time
 import torch
 from utils import *
 from config import *
-from transformers import GPT2Config, LlamaConfig
-from abctoolkit.utils import Exclaim_re, Quote_re, SquareBracket_re, Barline_regexPattern
-from abctoolkit.transpose import Note_list, Pitch_sign_list
-from abctoolkit.duration import calculate_bartext_duration
+from transformers import GPT2Config
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import Note_list
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
+from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_regexPattern
+import shutil
+import argparse
+from openai import OpenAI
 
-Note_list = Note_list + ['z', 'x']
 
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
+def verify_abc_header(abc_lines, prompt, api_key):
+    llm_prompt = """
+    You are a validator for ABC notation headers used for music generation.
 
-os.makedirs(ORIGINAL_OUTPUT_FOLDER, exist_ok=True)
-os.makedirs(INTERLEAVED_OUTPUT_FOLDER, exist_ok=True)
+    Your task:
+    - Check an ABC header instrument names and clefs against a natural-language prompt.
+    - If corrections are needed, fix them.
+    - If the header is already correct, return it unchanged.
 
-patchilizer = Patchilizer()
+    Strict Rules:
+    Do NOT:
+    - modify the %%score layout.
+    - change voice numbering.
+    - reorder voices.
+    - remove clefs for polyphonic instruments (ex: piano, guitar, etc.) if present.
+    You MAY and are encouraged to:
+    - clean, rename or normalize instrument names to MuseScore-style names (cello -> violincello, piano, concerto -> piano, double bass -> contrabass, etc.),
+    - modify clef names to match the instrument range (ex: treble, bass, etc.),
+    - keep only one clef if a monophonic instrument has multiple (ex: flute, saxophone, etc.) depending on the prompt.
+    Format:
+    Output ONLY the corrected header text.
+    Do NOT add explanations, comments, markdown formatting, or extra whitespace.
+    If the header is already correct, return it unchanged.
 
-patch_config = GPT2Config(num_hidden_layers=PATCH_NUM_LAYERS,
-                          max_length=PATCH_LENGTH,
-                          max_position_embeddings=PATCH_LENGTH,
-                          n_embd=HIDDEN_SIZE,
-                          num_attention_heads=HIDDEN_SIZE // 64,
-                          vocab_size=1)
-byte_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
-                         max_length=PATCH_SIZE + 1,
-                         max_position_embeddings=PATCH_SIZE + 1,
-                         hidden_size=HIDDEN_SIZE,
-                         num_attention_heads=HIDDEN_SIZE // 64,
-                         vocab_size=128)
+    Task:
+    Return the corrected header if needed. If already correct, return it unchanged.
 
-model = NotaGenLMHeadModel(encoder_config=patch_config, decoder_config=byte_config)
+    Example (Incorrect → Correct):
 
-print("Parameter Number: " + str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
+    Prompt:
+    A peaceful piano and contrabass duet in G major at a slow 72 BPM pace, featuring flowing eighth notes.
 
-checkpoint = torch.load('/homes/kb658/NotaGen/artifacts/weights_notagen_pretrain_p_size_16_p_length_1024_p_layers_20_c_layers_6_h_size_1280_lr_0.0001_batch_4.pth', map_location=torch.device(device))
-model.load_state_dict(checkpoint['model'])
-model = model.to(device)
-model.eval()
+    Incorrect Header:
+    %%score {{ ( 1 3 ) | 2 }} 4
+    L:1/8
+    Q:1/4=90
+    M:3/4
+    K:C
+    V:1 treble nm="Piano, Concerto" snm="Pno."
+    V:3 treble
+    V:2 bass
+    V:4 treble nm="Cello" snm="Cello"
 
+    Correct Output:
+    %%score {{ ( 1 3 ) | 2 }} 4
+    L:1/8
+    Q:1/4=72
+    M:4/4
+    K:G
+    V:1 treble nm="Piano" snm="Pno."
+    V:3 treble
+    V:2 bass
+    V:4 bass nm="Contrabass" snm="Cb."
+
+    Now validate the following:
+
+    Prompt:
+    {user_prompt}
+
+    ABC Header:
+    {abc_header}
+    """.format(user_prompt=prompt, abc_header=abc_lines)
+    client = OpenAI(api_key=api_key)
+    response = client.responses.create(
+        model="gpt-4.1-mini",
+        input=llm_prompt
+    )
+    new_header = response.output_text
+
+    return new_header
 
 def rest_unreduce(abc_lines):
 
@@ -62,6 +102,8 @@ def rest_unreduce(abc_lines):
             for round_bracket_match in re.findall(r'\((.*?)\)', line):
                 voice_group_list.append(round_bracket_match.split())
             existed_voices = [item for sublist in voice_group_list for item in sublist]
+        else:
+            existed_voices = []
         if line.startswith('V:'):
             symbol = line.split()[0]
             part_symbol_list.append(symbol)
@@ -134,7 +176,20 @@ def rest_unreduce(abc_lines):
     return unreduced_lines
 
 
-def inference_patch(prompt_lines=[], pieces=NUM_SAMPLES):
+def inference_patch(model, 
+                    plan="", 
+                    user_prompt="",
+                    prompt_lines=[], 
+                    pieces=NUM_SAMPLES, 
+                    output_folder="./text2music/artifacts/output/", 
+                    output_filename="output.abc", 
+                    device="cuda",
+                    api_key=None):
+
+    original_output_path = os.path.join(output_folder, "original", output_filename)
+    unreduced_output_path = os.path.join(output_folder, "interleaved", output_filename)
+
+    patchilizer = Patchilizer()
 
     file_no = 1
 
@@ -155,21 +210,36 @@ def inference_patch(prompt_lines=[], pieces=NUM_SAMPLES):
 
         input_patches = torch.tensor(prompt_patches, device=device).reshape(1, -1)
 
+        input_plan = patchilizer.encode_plan(plan).to(device)
+
         failure_flag = False
         end_flag = False
         cut_index = None
 
         tunebody_flag = False
         while True:
-            predicted_patch = model.generate(input_patches.unsqueeze(0),
+            predicted_patch = model.generate(input_plan.unsqueeze(0),
+                                             input_patches.unsqueeze(0),
                                              top_k=TOP_K,
                                              top_p=TOP_P,
                                              temperature=TEMPERATURE)
             if not tunebody_flag and patchilizer.decode([predicted_patch]).startswith('[r:'):  # start with [r:0/
+                # LLM verification
+                if api_key is not None and user_prompt != '':
+                    byte_list_string = ''.join(byte_list)
+                    new_header = verify_abc_header(byte_list_string, user_prompt, api_key)
+                    # Add '\n' at the end of new_header if not exists to avoid concatenation with the tunebody
+                    new_header = new_header if new_header.endswith('\n') else new_header + '\n'
+                    if new_header != byte_list_string:
+                        inference_patch(model, plan, '', new_header, pieces=pieces, output_folder=output_folder, output_filename=output_filename, device=device, api_key=None)
+                        # Exit out of function completely
+                        return
+
                 tunebody_flag = True
                 r0_patch = torch.tensor([ord(c) for c in '[r:0/']).unsqueeze(0).to(device)
                 temp_input_patches = torch.concat([input_patches, r0_patch], axis=-1)
-                predicted_patch = model.generate(temp_input_patches.unsqueeze(0),
+                predicted_patch = model.generate(input_plan.unsqueeze(0),
+                                                 temp_input_patches.unsqueeze(0),
                                                  top_k=TOP_K,
                                                  top_p=TOP_P,
                                                  temperature=TEMPERATURE)
@@ -236,26 +306,19 @@ def inference_patch(prompt_lines=[], pieces=NUM_SAMPLES):
         if not failure_flag:
             generation_time_cost = time.time() - start_time
 
-            abc_text = ''.join(byte_list)
-            filename = time.strftime("%Y%m%d-%H%M%S") + \
-                    "_" + format(generation_time_cost, '.2f') + '_' + str(file_no) + ".abc"
-                    
-            # unreduce
-            unreduced_output_path = os.path.join(INTERLEAVED_OUTPUT_FOLDER, filename)
-            
+            abc_text = ''.join(byte_list)            
             abc_lines = abc_text.split('\n')
             abc_lines = list(filter(None, abc_lines))
             abc_lines = [line + '\n' for line in abc_lines]
             try:
                 abc_lines = rest_unreduce(abc_lines)
-
+                # unreduced
                 with open(unreduced_output_path, 'w') as file:
                     file.writelines(abc_lines)
             except:
                 pass
             else:
                 # original
-                original_output_path = os.path.join(ORIGINAL_OUTPUT_FOLDER, filename)
                 with open(original_output_path, 'w') as w:
                     w.write(abc_text)
 
@@ -268,4 +331,174 @@ def inference_patch(prompt_lines=[], pieces=NUM_SAMPLES):
 
 if __name__ == '__main__':
 
-    inference_patch()
+    # Define args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--plan_path', type=str, default=None, help='Path to the plan text file')
+    parser.add_argument('--user_prompt', type=str, required=False, default='', help='User prompt to guide the generation')
+    parser.add_argument('--api_key', type=str, required=False, help='OpenAI API key for plan generation (if plan_path is not provided)')
+    parser.add_argument('--remove_prior_outputs', type=bool, default=False, help='Whether to remove prior outputs in the output folder before inference')
+    args = parser.parse_args()
+
+    if args.plan_path is not None and os.path.exists(args.plan_path):
+        with open(args.plan_path, 'r', encoding='utf-8') as f:
+            plan = f.read()
+    elif args.user_prompt:
+        # Ensure API key is provided
+        if not args.api_key:
+            print("❌ Error: API key is required when user prompt is provided.")
+            exit(1)
+
+        prompt = """
+            You are an assistant music composer that creates structured musical plans based on user descriptions. Convert the user’s prompt into a concise, measure-wise musical plan highlighting only measures with significant changes (tempo, time/key signature, instrumentation, dynamics, note density, pitch range), rather than listing every consecutive measure.
+            At the top, specify the total number of measures in the piece (use ~ 30 to 40 if not provided). Specify a genre only if requested or if it is relevant to one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
+        
+            Describe each selected measure using:
+            Instruments: MuseScore instrument names and/or voice (e.g., Cello -> Violincello, Double Bass -> Contrabass, etc. For multiple voices, specify the voice number if possible: e.g., Violin 1, Violin 2, etc.)
+            Pitch Range: lowest–highest MIDI note number across all instruments; use realistic, varied ranges
+            Note Density: Low, Moderate, or High based on notes per instrument considering tempo/time signature
+            Tempo: BPM
+            Time Signature: e.g., 3/4, 4/4, 6/8; these typically remain constant but can change to reflect musical structure.
+            Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use 0 for C major/A minor, -1 for one flat, +1 for one sharp, etc. These typically remain constant but can change to reflect musical structure.
+            Chords: lists of unique MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]) representing chords. Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. 
+            Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
+        
+            You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
+        
+            You may generate around 10 structurally important measures with their measure numbers. The measures do not need to be consecutive always but they could be depending on the scope of the user’s description. However, the measure numbers should be lesser than equal to the total measures asked for at the top of the plan.
+        
+            Global format:
+            Total Measures: <number>
+            Genre: <string> (only if requested or valid)
+            Instruments: <list>
+        
+            Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
+        
+            Use the following format for each measure:
+            Measure: <number>
+            Instruments: <list>
+            Pitch Range: <min>–<max>
+            Note Density: <Low|Moderate|High>
+            Tempo: <int> BPM
+            Time Signature: <string>
+            Key Signature: <int>
+            Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ... or None
+        
+            Example 1 (prompt: "Short eerie symphonic music in 4/4 time signature with a moderate tempo"):
+        
+            Total Measures: 29
+        
+            Genre: symphony
+        
+            Instruments: Trombone, Timpani, Cymbal, Maracas, Saw Synthesizer, Pan Flute, Violins
+        
+            Measure: 1
+            Instruments: Violins, Saw Synthesizer
+            Pitch Range: 43–66
+            Note Density: Low
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0, 2, 6, 7]
+        
+            Measure: 2
+            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+            Pitch Range: 24–67
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0, 3, 7], [0], [0, 3, 7], [0]
+        
+            Measure: 14
+            Instruments: Violins, Saw Synthesizer, Timpani
+            Pitch Range: 24–84
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0], [0], [0], [0]
+        
+            Measure: 15
+            Instruments: Violins, Saw Synthesizer, Timpani
+            Pitch Range: 24–84
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0], [0], [0], [0]
+        
+            Measure: 16
+            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+            Pitch Range: 24–67
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0, 3, 7], [0], [0, 3, 7], [0]
+        
+            Measure: 17
+            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+            Pitch Range: 24–66
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0, 2, 6], [0], [0, 2, 6], [0, 3]
+        
+            Measure: 28
+            Instruments: Violins, Saw Synthesizer, Timpani
+            Pitch Range: 24–84
+            Note Density: Moderate
+            Tempo: 124 BPM
+            Time Signature: 4/4
+            Chords: [0], [0], [0], [0]
+        
+            Now, here's the user's prompt:
+        
+            User:
+            {user_prompt}
+        
+            Assistant:
+            """.format(user_prompt=args.user_prompt)
+        client = OpenAI(api_key=args.api_key)
+        response = client.responses.create(
+            model="gpt-4.1-mini",
+            input=prompt
+        )
+        plan = response.output_text
+    else:
+        plan = ""
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    patch_config = GPT2Config(num_hidden_layers=PATCH_NUM_LAYERS,
+                            max_length=PATCH_LENGTH,
+                            max_position_embeddings=PATCH_LENGTH,
+                            n_embd=HIDDEN_SIZE,
+                            num_attention_heads=HIDDEN_SIZE // 64,
+                            vocab_size=1)
+    byte_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
+                            max_length=PATCH_SIZE + 1,
+                            max_position_embeddings=PATCH_SIZE + 1,
+                            hidden_size=HIDDEN_SIZE,
+                            num_attention_heads=HIDDEN_SIZE // 64,
+                            vocab_size=128)
+
+    model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=byte_config)
+
+    print("Parameter Number: " + str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
+
+    checkpoint = torch.load(INFERENCE_WEIGHTS_PATH, map_location=torch.device(device))
+    model.load_state_dict(checkpoint['model'])
+    model = model.to(device)
+    model.eval()
+
+    if args.remove_prior_outputs:
+        if os.path.exists(ORIGINAL_OUTPUT_FOLDER):
+            print(f"Removing prior outputs in {ORIGINAL_OUTPUT_FOLDER}...")
+            shutil.rmtree(ORIGINAL_OUTPUT_FOLDER)
+
+    os.makedirs(ORIGINAL_OUTPUT_FOLDER, exist_ok=True)
+    os.makedirs(os.path.join(ORIGINAL_OUTPUT_FOLDER, "original"), exist_ok=True)
+    os.makedirs(os.path.join(ORIGINAL_OUTPUT_FOLDER, "interleaved"), exist_ok=True)
+
+    filename = time.strftime("%Y%m%d-%H%M%S") + '_output.abc'
+
+    inference_patch(model, plan, args.user_prompt, [], pieces=NUM_SAMPLES, output_folder=ORIGINAL_OUTPUT_FOLDER, output_filename=filename, device=device, api_key=args.api_key)

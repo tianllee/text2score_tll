@@ -5,9 +5,7 @@ import random
 import subprocess
 from tqdm import tqdm
 from multiprocessing import Pool
-
-ORI_FOLDER = "./text2music/artifacts/output/abc/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"  # Replace with the path to your folder containing standard/interleaved abc files
-DES_FOLDER = "./text2music/artifacts/output/xml/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16_k_9_p_0.9_temp_1.2"   # The script will convert the abc files and output musicxml files to this folder
+import argparse
 
 def convert_abc2xml(file_list):
     cmd = 'python text2music/data/utils/abc_helper/abc2xml.py '
@@ -34,6 +32,18 @@ def convert_abc2xml(file_list):
             pass
 
 if __name__ == '__main__':
+
+    # Define args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--abc_folder', type=str, default="./text2music/artifacts/output/abc/", help="Folder containing .abc files")
+    parser.add_argument('--xml_folder', type=str, default="./text2music/artifacts/output/xml/", help="Output folder for converted .xml files")
+    args = parser.parse_args()
+
+    # ORI_FOLDER = "./text2music/artifacts/output/abc/"
+    # DES_FOLDER = "./text2music/artifacts/output/xml/"
+    ORI_FOLDER = args.abc_folder
+    DES_FOLDER = args.xml_folder
+
     # Clear and recreate the destination folder
     if os.path.exists(DES_FOLDER):
         shutil.rmtree(DES_FOLDER)
@@ -45,6 +55,7 @@ if __name__ == '__main__':
     # Traverse the specified folder for ABC files
     for root, dirs, files in os.walk(ORI_FOLDER):
         for file in files:
+            # Ensure we only process .abc files
             if not file.endswith(".abc"):
                 continue
             filename = os.path.join(root, file).replace("\\", "/")
