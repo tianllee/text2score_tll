@@ -14,6 +14,7 @@ import os
 import argparse
 from pathlib import Path
 import music21
+from tqdm import tqdm
 
 
 def convert_xml_to_mid(xml_path, mid_path):
@@ -50,11 +51,14 @@ def process_directory(data_dir, verbose=False):
         key=lambda x: int(x.name)
     )
 
+    # Collect all xml files first for progress bar
+    all_xml = []
     for subdir in subdirs:
         xml_path = subdir / 'xml' / f'{subdir.name}_output.xml'
-        if not xml_path.exists():
-            continue
+        if xml_path.exists():
+            all_xml.append((subdir, xml_path))
 
+    for subdir, xml_path in tqdm(all_xml, desc='Converting XML→MIDI'):
         stats['total'] += 1
         mid_dir = subdir / 'mid'
         mid_dir.mkdir(exist_ok=True)

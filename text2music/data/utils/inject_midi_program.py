@@ -15,6 +15,7 @@ import re
 import os
 import argparse
 from pathlib import Path
+from tqdm import tqdm
 
 # GM Program Number mapping (0-based, abc2xml adds +1 for MusicXML)
 # Reference: https://www.midi.org/specifications-old/item/gm-level-1-sound-set
@@ -307,16 +308,16 @@ def process_directory(data_dir, dry_run=False, verbose=False):
     subdirs = sorted([d for d in data_dir.iterdir() if d.is_dir()],
                      key=lambda x: int(x.name) if x.name.isdigit() else 0)
 
+    # Collect all abc files first for progress bar
+    all_abc_files = []
     for subdir in subdirs:
         abc_dir = subdir / 'abc'
         if not abc_dir.is_dir():
             continue
+        for abc_path in sorted(abc_dir.glob('*.abc')):
+            all_abc_files.append((subdir, abc_path))
 
-        abc_files = sorted(abc_dir.glob('*.abc'))
-        if not abc_files:
-            continue
-
-        for abc_path in abc_files:
+    for subdir, abc_path in tqdm(all_abc_files, desc='Injecting MIDI'):
             stats['total_files'] += 1
             abc_text = abc_path.read_text(encoding='utf-8')
             modified, changes, unresolved = inject_midi_into_abc(abc_text, verbose)
