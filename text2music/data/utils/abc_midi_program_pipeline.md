@@ -10,17 +10,26 @@ Injects GM MIDI program numbers into ABC files so that downstream tools (MuseSco
 # Dry run — preview mappings without modifying files
 python text2music/data/utils/inject_midi_program.py --data_dir /path/to/data --dry_run --verbose
 
-# Apply
+# Apply — writes to abc_injected/ folders (originals are not modified)
 python text2music/data/utils/inject_midi_program.py --data_dir /path/to/data
-
-# Use default path (/Users/sungkyun/ML/text2score_ablated)
-python text2music/data/utils/inject_midi_program.py
 ```
 
 **Options:**
-- `--data_dir`: Data directory path (default: `/Users/sungkyun/ML/text2score_ablated`)
+- `--data_dir` (required): Data directory path (contains numbered subdirs with `abc/` folders)
 - `--dry_run`: Report mappings without writing files
 - `--verbose`: Print per-file mapping details
+
+**Directory structure:**
+```
+data_dir/
+├── 1/abc/*.abc          # input (not modified)
+│   └── abc_injected/    # output (created automatically)
+├── 2/abc/*.abc
+│   └── abc_injected/
+└── ...
+```
+
+All `.abc` files in each `abc/` folder are processed (no filename pattern constraint).
 
 ### Python API
 
@@ -121,7 +130,7 @@ print(f"Success: {stats['success']}/{stats['total']}")
 | Double Bass | 43 | 44 |
 | Harp | 46 | 47 |
 | Timpani | 47 | 48 |
-| Choir Aahs | 52 | 53 |
+| Choir Aahs (all voices: soprano, alto, tenor, bass, etc.) | 52 | 53 |
 | Trumpet | 56 | 57 |
 | Trombone | 57 | 58 |
 | Tuba | 58 | 59 |

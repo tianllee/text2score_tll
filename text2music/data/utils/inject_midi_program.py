@@ -5,8 +5,10 @@ This ensures that abc2xml produces MusicXML with <midi-instrument><midi-program>
 elements, so that MuseScore (MS Basic) and MIDI-based DAWs select the correct
 General MIDI instrument instead of defaulting to piano.
 
+Output is written to abc_injected/ folders (originals are not modified).
+
 Usage:
-    python inject_midi_program.py --data_dir /path/to/text2score_ablated [--dry_run]
+    python inject_midi_program.py --data_dir /path/to/data [--dry_run] [--verbose]
 """
 
 import re
@@ -48,13 +50,20 @@ GM_MAP = {
     'strings': 48,
     'choir': 52,
     'choir aahs': 52,
-    # Voice (use choir sounds)
+    # Voice — all mapped to GM 52 (0-based) = 53 (1-based), Choir Aahs
     'soprano': 52,
-    'alto': 53,
+    'alto': 52,
     'tenor': 52,
+    'baritone': 52,
     'bass': 52,
     'bass voice': 52,
+    'mezzo-soprano': 52,
+    'mezzo soprano': 52,
     'solo vocal': 52,
+    'vocal': 52,
+    'voice': 52,
+    'singing': 52,
+    'singer': 52,
     # Brass (56-63)
     'trumpet': 56,
     'trombone': 57,
@@ -109,7 +118,7 @@ GM_MAP = {
     'women': 52,  # women's choir
     'canto': 52,  # voice
     'sopranos': 52,
-    'contraltos': 53,
+    'contraltos': 52,
     'campane': 14, # bells -> tubular bells
     'left hand': 0,   # piano LH
     'right hand': 0,   # piano RH
@@ -147,8 +156,12 @@ KEYWORD_PRIORITY = [
     ('string ensemble', 48),
     ('choir', 52),
     ('soprano', 52),
-    ('alto', 53),
+    ('alto', 52),
     ('tenor', 52),
+    ('baritone', 52),
+    ('vocal', 52),
+    ('voice', 52),
+    ('singing', 52),
     ('trumpet', 56),
     ('trombone', 57),
     ('tuba', 58),
@@ -278,7 +291,11 @@ def inject_midi_into_abc(abc_text, verbose=False):
 
 
 def process_directory(data_dir, dry_run=False, verbose=False):
-    """Process all ABC files in the data directory."""
+    """Process all ABC files in the data directory.
+
+    For each {data_dir}/{subdir}/abc/*.abc, writes the injected version to
+    {data_dir}/{subdir}/abc_injected/{filename}.abc (originals are not modified).
+    """
     data_dir = Path(data_dir)
     stats = {
         'total_files': 0,
@@ -291,40 +308,47 @@ def process_directory(data_dir, dry_run=False, verbose=False):
                      key=lambda x: int(x.name) if x.name.isdigit() else 0)
 
     for subdir in subdirs:
-        abc_path = subdir / 'abc' / f'{subdir.name}_output.abc'
-        if not abc_path.exists():
+        abc_dir = subdir / 'abc'
+        if not abc_dir.is_dir():
             continue
 
-        stats['total_files'] += 1
-        abc_text = abc_path.read_text(encoding='utf-8')
-        modified, changes, unresolved = inject_midi_into_abc(abc_text, verbose)
+        abc_files = sorted(abc_dir.glob('*.abc'))
+        if not abc_files:
+            continue
 
-        if changes:
-            stats['modified_files'] += 1
-            stats['total_voices_mapped'] += len(changes)
+        for abc_path in abc_files:
+            stats['total_files'] += 1
+            abc_text = abc_path.read_text(encoding='utf-8')
+            modified, changes, unresolved = inject_midi_into_abc(abc_text, verbose)
 
-        if unresolved:
-            for raw_name, vline in unresolved:
-                stats['unresolved'].append((subdir.name, raw_name, vline))
+            if changes:
+                stats['modified_files'] += 1
+                stats['total_voices_mapped'] += len(changes)
 
-        if not dry_run and changes:
-            abc_path.write_text(modified, encoding='utf-8')
+            if unresolved:
+                for raw_name, vline in unresolved:
+                    stats['unresolved'].append((subdir.name, raw_name, vline))
 
-        if verbose and (changes or unresolved):
-            print(f"\n--- {subdir.name} ---")
-            for raw, matched, prog in changes:
-                print(f"  OK: '{raw}' -> {matched} (program {prog})")
-            for raw, vline in unresolved:
-                print(f"  ??: '{raw}' -> UNRESOLVED")
+            if not dry_run and changes:
+                injected_dir = subdir / 'abc_injected'
+                injected_dir.mkdir(exist_ok=True)
+                out_path = injected_dir / abc_path.name
+                out_path.write_text(modified, encoding='utf-8')
+
+            if verbose and (changes or unresolved):
+                print(f"\n--- {abc_path.relative_to(data_dir)} ---")
+                for raw, matched, prog in changes:
+                    print(f"  OK: '{raw}' -> {matched} (program {prog})")
+                for raw, vline in unresolved:
+                    print(f"  ??: '{raw}' -> UNRESOLVED")
 
     return stats
 
 
 def main():
     parser = argparse.ArgumentParser(description='Inject %%MIDI program into ABC files')
-    parser.add_argument('--data_dir', type=str,
-                        default='/Users/sungkyun/ML/text2score_ablated',
-                        help='Path to data directory')
+    parser.add_argument('--data_dir', type=str, required=True,
+                        help='Path to data directory (contains numbered subdirs with abc/ folders)')
     parser.add_argument('--dry_run', action='store_true',
                         help='Do not write files, just report')
     parser.add_argument('--verbose', action='store_true',
