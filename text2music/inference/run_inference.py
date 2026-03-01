@@ -4,9 +4,6 @@ import torch
 from utils import *
 from config import *
 from transformers import GPT2Config
-from text2music.data.utils.abc_helper.abctoolkit_v006_mod.transpose import Note_list
-from text2music.data.utils.abc_helper.abctoolkit_v006_mod.duration import calculate_bartext_duration
-from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_regexPattern
 import shutil
 import argparse
 import json

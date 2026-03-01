@@ -108,81 +108,137 @@ def get_playability_metrics(xml_path):
 
     return results
 
-
 def get_readability_metrics(xml_path):
-    """
-    Evaluates the visual readability of a MusicXML file.
-    Returns a dictionary of scores (0-100%) for each part.
-    """
-    # Load and parse the MusicXML file
     score = music21.converter.parse(xml_path)
     results = {}
 
     for part in score.parts:
-        # Flatten the part to access notes and chords sequentially
         elements = part.flatten().notes
         total_elements = len(elements)
         
         violations = {
-            "rhythmic_complexity": 0,
-            "accidental_consistency": 0,
-            "beam_stem_logic": 0
+            "rhythmic_complexity": 0,    # Ties
+            "micro_rhythmic_jitter": 0,  # 64th note onsets/durations
+            "accidental_consistency": 0, # Diatonic check
+            "enharmonic_directionality": 0 # Sharp/Flat mismatch
         }
         
-        # Set up context for accidental checking
-        # We extract pitch names from the Scale to avoid 'isDiatonic' attribute errors
+        # Key context for accidental checking
         ks = part.flatten().getContextByClass(music21.key.KeySignature)
         key_obj = ks.asKey() if ks else music21.key.Key('C')
         diatonic_names = [p.name for p in key_obj.pitches]
+        
+        # Determine if the key is "Sharp-based" or "Flat-based"
+        key_type = 'neutral' # C Maj / A Min
+        if ks:
+            if ks.sharps > 0: key_type = 'sharp'
+            elif ks.sharps < 0: key_type = 'flat'
 
         for el in elements:
-            # 1. rhythmic_complexity (The "Ties" Metric)
-            # High tie counts often indicate jittery MIDI-to-XML conversion.
+            # 1. rhythmic_complexity (Ties)
             if el.tie is not None:
                 violations["rhythmic_complexity"] += 1
 
-            # 2. accidental_consistency (Diatonic Integrity)
-            # Checks if the pitch name (e.g., 'F#') matches the scale of the key.
+            # 2. micro_rhythmic_jitter (64th note threshold)
+            # Quarter length for 64th note = 0.0625
+            is_jitter_duration = el.duration.quarterLength <= 0.0625
+            is_jitter_onset = (el.offset % 0.0625) != 0
+            if is_jitter_duration or is_jitter_onset:
+                violations["micro_rhythmic_jitter"] += 1
+
+            # 3. accidental_consistency (Diatonic)
             pitches = el.pitches if hasattr(el, 'pitches') else []
             if any(p.name not in diatonic_names for p in pitches):
                 violations["accidental_consistency"] += 1
+            
+            # 4. enharmonic_directionality
+            # Flag if note uses Sharp in a Flat key, or Flat in a Sharp key.
+            for p in pitches:
+                if p.accidental:
+                    acc_name = p.accidental.name
+                    if key_type == 'sharp' and 'flat' in acc_name:
+                        violations["enharmonic_directionality"] += 1
+                    elif key_type == 'flat' and 'sharp' in acc_name:
+                        violations["enharmonic_directionality"] += 1
 
-            # 3. beam_stem_logic (Engraving Metadata)
-            # Checks if the file contains explicit stem/beam instructions. 
-            # ABC-to-XML is usually explicit; MIDI-to-XML relies on software auto-guessing.
-            has_beams = len(el.beams) > 0
-            has_stem = el.stemDirection not in [None, 'unspecified']
-            if not (has_beams or has_stem):
-                violations["beam_stem_logic"] += 1
-
-        # Calculate final percentages (100% = No Violations / Perfect Readability)
         if total_elements > 0:
-            metrics = {
-                "rhythmic_complexity": (1 - (violations["rhythmic_complexity"] / total_elements)) * 100,
-                "accidental_consistency": (1 - (violations["accidental_consistency"] / total_elements)) * 100,
-                "beam_stem_logic": (1 - (violations["beam_stem_logic"] / total_elements)) * 100,
-            }
-            metrics["total_readability_score"] = sum(metrics.values()) / 3
+            metrics = {k: (1 - (v / total_elements)) * 100 for k, v in violations.items()}
+            metrics["total_readability_score"] = sum(metrics.values()) / 4
         else:
-            # Default to 100% if the part is empty
             metrics = {k: 100.0 for k in violations}
-            metrics.update({"total_readability_score": 100.0})
+            metrics["total_readability_score"] = 100.0
 
         part_name = part.partName if part.partName else "Unknown"
         results[part_name] = metrics
 
     return results
 
+
+def validate_musicxml_metadata(xml_path, expected_tempo, expected_key, expected_ts):
+    score = music21.converter.parse(xml_path)
+    
+    # 1. TIME SIGNATURE VALIDATION
+    # Some XMLs don't 'flatten' well, so we search explicitly in the first part/measure
+    all_ts = score.flatten().getElementsByClass(music21.meter.TimeSignature)
+    ts_actual = all_ts[0] if len(all_ts) > 0 else None
+    
+    # Check ratioString (e.g., '4/4')
+    ts_score = 1 if (ts_actual and ts_actual.ratioString == expected_ts) else 0
+
+    # 2. KEY SIGNATURE VALIDATION
+    # KeySignatures (sharps/flats) are different from Key objects (Major/Minor)
+    all_ks = score.flatten().getElementsByClass(music21.key.KeySignature)
+    ks_actual = all_ks[0] if len(all_ks) > 0 else None
+    
+    key_score = 0
+    if ks_actual:
+        # We convert the KeySignature to a Key object to get a comparable string
+        # This handles cases like 'G major' vs 'G'
+        actual_key_str = ks_actual.asKey().name.lower()
+        if actual_key_str == expected_key.lower():
+            key_score = 1
+            
+    # 3. TEMPO VALIDATION
+    # If getContextByClass failed, we search for MetronomeMark specifically
+    all_metronomes = score.flatten().getElementsByClass(music21.tempo.MetronomeMark)
+    tempo_actual = all_metronomes[0] if len(all_metronomes) > 0 else None
+    
+    tempo_score = 0
+    if tempo_actual:
+        # Use a small delta for float comparison in case of rounding
+        if abs(float(tempo_actual.number) - float(expected_tempo)) <= 1.0:
+            tempo_score = 1
+    else:
+        # Backup: Some ABC-to-XML converters put tempo in a TextExpression
+        all_text = score.flatten().getElementsByClass(music21.expressions.TextExpression)
+        for t in all_text:
+            if "BPM" in t.content or "=" in t.content:
+                # Try to extract numbers from text if MetronomeMark is missing
+                import re
+                match = re.search(r'\d+', t.content)
+                if match and abs(float(match.group()) - float(expected_tempo)) <= 1.0:
+                    tempo_score = 1
+
+    return {
+        "tempo_match": tempo_score,
+        "key_match": key_score,
+        "time_sig_match": ts_score
+    }
+
+# Example Usage with your JSON data:
+results = validate_musicxml_metadata("/gpfs/scratch/acw769/text2score/text2score_ablated_v2/1/xml/1_output.xml", 72, "G major", "4/4")
+print(results)
+
 # Example usage:
 metrics = get_playability_metrics('/data/home/acw769/text2score/text2music/notebooks/reconstructed_amt.xml')
 print(json.dumps(metrics, indent=4))
 
-metrics = get_playability_metrics('/data/home/acw769/text2score/text2music/notebooks/flute_solo.xml')
+metrics = get_playability_metrics('/gpfs/scratch/acw769/text2score/text2score_ablated_v2/1/xml/1_output.xml')
 print(json.dumps(metrics, indent=4))
 
 # Example usage:
 metrics = get_readability_metrics('/data/home/acw769/text2score/text2music/notebooks/reconstructed_amt.xml')
 print(json.dumps(metrics, indent=4))
 
-metrics = get_readability_metrics('/data/home/acw769/text2score/text2music/notebooks/flute_solo.xml')
+metrics = get_readability_metrics('/gpfs/scratch/acw769/text2score/text2score_ablated_v2/1/xml/1_output.xml')
 print(json.dumps(metrics, indent=4))

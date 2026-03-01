@@ -754,6 +754,38 @@ def get_consecutive_measures(full_plan, top_priority_measures):
 
     return consecutive_measures
 
+def get_measures(full_plan, top_priority_measures):
+    """
+    Get measures based on the top priority measures.
+
+    Args:
+        full_plan: The full plan dictionary containing measure information.
+        top_priority_measures: A list of top priority measures.
+
+    Returns:
+        A list of measures with information.
+    """
+
+    # Remove all_instruments from full_plan to avoid confusion
+    if 'all_instruments' in full_plan:
+        del full_plan['all_instruments']
+
+    # Randomly append a consecutive measure (above or below each measure) to the top priority measures
+    selected_measures = []
+    for measure, priority in top_priority_measures:
+        measure_num = int(measure.split(': ')[1])
+
+        # Append current measure
+        if measure not in selected_measures:
+            selected_measures.append((measure))
+
+    # Sort the top priority measures with consecutive measures by their measure number for better readability
+    selected_measures.sort(key=lambda x: int(x.split(': ')[1]))
+
+    measures = {measure: full_plan[measure] for measure in selected_measures}
+
+    return measures
+
 def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None, plan_length: int = None):
     """
     Converts the plan dictionary to text.
@@ -818,15 +850,34 @@ def convert_plan_to_text(data, pitch_shift: int = 0, genre: str = None, plan_len
         ks = details.get('key_signature')
         ks_str = str(ks + pitch_shift) if ks is not None else "None"
         
-        raw_chords = details.get('chords', [])
-        chord_strs = []
-        if raw_chords:
-            for chord in raw_chords:
-                shifted_chord = [(n + pitch_shift) % 12 for n in chord] 
-                shifted_chord.sort()
-                chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
+        # raw_chords = details.get('chords', [])
+        # chord_strs = []
+        # if raw_chords:
+        #     for chord in raw_chords:
+        #         shifted_chord = [(n + pitch_shift) % 12 for n in chord] 
+        #         shifted_chord.sort()
+        #         chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
         
-        chords_line = ", ".join(chord_strs) if chord_strs else "None"
+        # chords_line = ", ".join(chord_strs) if chord_strs else "None"
+        raw_chords = details.get('chords', [])
+        chords_line = "None"
+        
+        if raw_chords:
+            # 1. Filter for chords with 3 or more notes
+            triads_and_above = [c for c in raw_chords if len(c) >= 3]
+            
+            if triads_and_above:
+                # Priority: Pick a random chord from those with 3+ notes
+                selected_chord = random.choice(triads_and_above)
+            else:
+                # Fallback: No triads found, so pick the largest available (e.g., a dyad)
+                selected_chord = max(raw_chords, key=len)
+            
+            # 2. Process the selected chord (Shift -> Modulo -> Sort)
+            processed_chord = sorted([(n + pitch_shift) % 12 for n in selected_chord])
+            
+            # 3. Format the final string
+            chords_line = f"[{', '.join(map(str, processed_chord))}]"
 
         tempo_val = details.get('tempo')
         tempo_str = f"{tempo_val} BPM" if tempo_val is not None else "None"
@@ -911,15 +962,34 @@ def convert_measures_to_text(data, all_instruments, pitch_shift: int = 0, genre:
         else:
             range_str = "None"
         
-        raw_chords = details.get('chords', [])
-        chord_strs = []
-        if raw_chords:
-            for chord in raw_chords:
-                shifted_chord = [(n + pitch_shift) % 12 for n in chord]
-                shifted_chord.sort()
-                chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
+        # raw_chords = details.get('chords', [])
+        # chord_strs = []
+        # if raw_chords:
+        #     for chord in raw_chords:
+        #         shifted_chord = [(n + pitch_shift) % 12 for n in chord]
+        #         shifted_chord.sort()
+        #         chord_strs.append(f"[{', '.join(map(str, shifted_chord))}]")
         
-        chords_line = ", ".join(chord_strs) if chord_strs else "None"
+        # chords_line = ", ".join(chord_strs) if chord_strs else "None"
+        raw_chords = details.get('chords', [])
+        chords_line = "None"
+        
+        if raw_chords:
+            # 1. Filter for chords with 3 or more notes
+            triads_and_above = [c for c in raw_chords if len(c) >= 3]
+            
+            if triads_and_above:
+                # Priority: Pick a random chord from those with 3+ notes
+                selected_chord = random.choice(triads_and_above)
+            else:
+                # Fallback: No triads found, so pick the largest available (e.g., a dyad)
+                selected_chord = max(raw_chords, key=len)
+            
+            # 2. Process the selected chord (Shift -> Modulo -> Sort)
+            processed_chord = sorted([(n + pitch_shift) % 12 for n in selected_chord])
+            
+            # 3. Format the final string
+            chords_line = f"[{', '.join(map(str, processed_chord))}]"
 
         tempo_val = details.get('tempo')
         tempo_str = f"{tempo_val} BPM" if tempo_val is not None else "None"
@@ -1006,8 +1076,10 @@ def get_partial_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None
     # Get length of full_plan excluding 'all_instruments'
     plan_length = len(full_plan) - 1 if 'all_instruments' in full_plan else len(full_plan)
     
-    top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=5)
-    consecutive_measures = get_consecutive_measures(full_plan, top_priority_measures)
+    # Randomly choose top_n between 5 and 10
+    top_n = random.randint(5, 10)
+    top_priority_measures, all_instruments = get_priority_order(full_plan, top_pct=10, top_n=top_n)
+    consecutive_measures = get_measures(full_plan, top_priority_measures)
     return convert_measures_to_text(consecutive_measures, all_instruments, pitch_shift=pitch_shift, genre=genre, plan_length=plan_length)
 
 def get_full_plan_text(pkl_file: str, pitch_shift: int = 0, genre: str = None):

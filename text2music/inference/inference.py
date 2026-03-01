@@ -77,7 +77,7 @@ def verify_abc_header(abc_lines, prompt, api_key):
     """.format(user_prompt=prompt, abc_header=abc_lines)
     client = OpenAI(api_key=api_key)
     response = client.responses.create(
-        model="gpt-4.1-mini",
+        model="gpt-5.1",
         input=llm_prompt
     )
     new_header = response.output_text
@@ -224,16 +224,16 @@ def inference_patch(model,
                                              top_p=TOP_P,
                                              temperature=TEMPERATURE)
             if not tunebody_flag and patchilizer.decode([predicted_patch]).startswith('[r:'):  # start with [r:0/
-                # LLM verification
-                if api_key is not None and user_prompt != '':
-                    byte_list_string = ''.join(byte_list)
-                    new_header = verify_abc_header(byte_list_string, user_prompt, api_key)
-                    # Add '\n' at the end of new_header if not exists to avoid concatenation with the tunebody
-                    new_header = new_header if new_header.endswith('\n') else new_header + '\n'
-                    if new_header != byte_list_string:
-                        inference_patch(model, plan, '', new_header, pieces=pieces, output_folder=output_folder, output_filename=output_filename, device=device, api_key=None)
-                        # Exit out of function completely
-                        return
+                # # LLM verification
+                # if api_key is not None and user_prompt != '':
+                #     byte_list_string = ''.join(byte_list)
+                #     new_header = verify_abc_header(byte_list_string, user_prompt, api_key)
+                #     # Add '\n' at the end of new_header if not exists to avoid concatenation with the tunebody
+                #     new_header = new_header if new_header.endswith('\n') else new_header + '\n'
+                #     if new_header != byte_list_string:
+                #         inference_patch(model, plan, '', new_header, pieces=pieces, output_folder=output_folder, output_filename=output_filename, device=device, api_key=None)
+                #         # Exit out of function completely
+                #         return
 
                 tunebody_flag = True
                 r0_patch = torch.tensor([ord(c) for c in '[r:0/']).unsqueeze(0).to(device)
@@ -354,26 +354,26 @@ if __name__ == '__main__':
         
             Describe each selected measure using:
             Instruments: MuseScore instrument names and/or voice (e.g., Cello -> Violincello, Double Bass -> Contrabass, etc. For multiple voices, specify the voice number if possible: e.g., Violin 1, Violin 2, etc.)
-            Pitch Range: lowest–highest MIDI note number across all instruments; use realistic, varied ranges
-            Note Density: Low, Moderate, or High based on notes per instrument considering tempo/time signature
-            Tempo: BPM
+            Pitch Range: lowest–highest MIDI note number for all instruments combined; use varied ranges per measure but consider the instrument's feasible musical range: e.g., for solo flute, you might specify min and max values within 60–96, while for a string quartet, you might specify values within a wider range of 36–96.
+            Note Density: Low, Moderate, or High based on notes per instrument, including chords. Consider the musical style when determining density. For example, a fast classical piece with many sixteenth notes might be High density, while a slow 3/4 folk piece with mostly quarter notes might be Low density.
+            Tempo: BPM: e.g., 60 BPM for slow, 120 BPM for moderate, 180 BPM for fast; you can also specify tempo changes across measures to reflect the musical structure and mood.
             Time Signature: e.g., 3/4, 4/4, 6/8; these typically remain constant but can change to reflect musical structure.
-            Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use 0 for C major/A minor, -1 for one flat, +1 for one sharp, etc. These typically remain constant but can change to reflect musical structure.
-            Chords: lists of unique MIDI pitches % 12 (e.g., [9, 2], [2], [2, 6, 8, 9, 11]) representing chords. Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. 
+            Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use '0' for C major/A minor, '-1' for one flat, '+1' for one sharp, etc. These typically remain constant but can change to reflect musical structure.
+            Chords: lists of unique MIDI pitches % 12 representing chords (e.g., [0, 2, 6, 7] for single or [9, 2], [2, 6, 8, 9, 11] for double chords). Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. Typically, 1-2 chords per measure is common but can also be None if there are melodies without clear chords or if the music is monophonic. 
             Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
         
             You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
         
             You may generate around 10 structurally important measures with their measure numbers. The measures do not need to be consecutive always but they could be depending on the scope of the user’s description. However, the measure numbers should be lesser than equal to the total measures asked for at the top of the plan.
         
-            Global format:
+            Global format (at the top of the plan. Always remember to include total measures and instruments. Genre is optional if it matches the available genres.):
             Total Measures: <number>
             Genre: <string> (only if requested or valid)
             Instruments: <list>
         
             Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
         
-            Use the following format for each measure:
+            Use the following format for each measure (Do not add additional commentary other than the format specified):
             Measure: <number>
             Instruments: <list>
             Pitch Range: <min>–<max>
@@ -456,10 +456,11 @@ if __name__ == '__main__':
             """.format(user_prompt=args.user_prompt)
         client = OpenAI(api_key=args.api_key)
         response = client.responses.create(
-            model="gpt-4.1-mini",
+            model="gpt-5.1",
             input=prompt
         )
         plan = response.output_text
+        print("Generated Plan:\n", plan)
     else:
         plan = ""
 
