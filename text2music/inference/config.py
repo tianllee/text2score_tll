@@ -1,7 +1,9 @@
 import os
 
 # Configurations for inference
-INFERENCE_WEIGHTS_PATH = '/data/home/acw769/text2score/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth'               # Path to weights for inference# Folder to save output files
+# INFERENCE_WEIGHTS_PATH = '/data/home/acw769/text2score/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth'               # Path to weights for inference# Folder to save output files
+# INFERENCE_WEIGHTS_PATH = '/data/home/acw769/text2score/text2music/artifacts/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth'
+INFERENCE_WEIGHTS_PATH = "/gpfs/scratch/acw769/text2score/artifacts_v2/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth"
 NUM_SAMPLES = 1                                               # Number of samples to generate (only for generate mode)
 TOP_K = 9                                                       # Top k for sampling
 TOP_P = 0.9                                                      # Top p for sampling

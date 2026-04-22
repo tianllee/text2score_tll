@@ -52,17 +52,29 @@ def process_directory(data_dir, verbose=False):
     )
 
     # Collect all xml files first for progress bar
+    # all_xml = []
+    # for subdir in subdirs:
+    #     xml_path = subdir / 'xml' / f'{subdir.name}_output.xml'
+    #     if xml_path.exists():
+    #         all_xml.append((subdir, xml_path))
+    
+    # Collect all xml files first for progress bar
     all_xml = []
     for subdir in subdirs:
-        xml_path = subdir / 'xml' / f'{subdir.name}_output.xml'
-        if xml_path.exists():
-            all_xml.append((subdir, xml_path))
+        xml_dir = subdir / 'xml'
+        if xml_dir.exists():
+            xml_files = list(xml_dir.glob('*.xml'))
+            if xml_files:
+                # Use the first XML file found
+                xml_path = xml_files[0]
+                all_xml.append((subdir, xml_path))
 
     for subdir, xml_path in tqdm(all_xml, desc='Converting XML→MIDI'):
         stats['total'] += 1
         mid_dir = subdir / 'mid'
         mid_dir.mkdir(exist_ok=True)
-        mid_path = mid_dir / f'{subdir.name}_output.mid'
+        # mid_path = mid_dir / f'{subdir.name}_output.mid'
+        mid_path = mid_dir / f'{xml_path.stem}_output.mid'
 
         try:
             status = convert_xml_to_mid(xml_path, mid_path)

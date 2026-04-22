@@ -11,78 +11,8 @@ from text2music.data.utils.abc_helper.abctoolkit_v006_mod.utils import Barline_r
 import shutil
 import argparse
 from openai import OpenAI
+from text2music.inference.prompt import get_llm_prompt
 
-
-def verify_abc_header(abc_lines, prompt, api_key):
-    llm_prompt = """
-    You are a validator for ABC notation headers used for music generation.
-
-    Your task:
-    - Check an ABC header instrument names and clefs against a natural-language prompt.
-    - If corrections are needed, fix them.
-    - If the header is already correct, return it unchanged.
-
-    Strict Rules:
-    Do NOT:
-    - modify the %%score layout.
-    - change voice numbering.
-    - reorder voices.
-    - remove clefs for polyphonic instruments (ex: piano, guitar, etc.) if present.
-    You MAY and are encouraged to:
-    - clean, rename or normalize instrument names to MuseScore-style names (cello -> violincello, piano, concerto -> piano, double bass -> contrabass, etc.),
-    - modify clef names to match the instrument range (ex: treble, bass, etc.),
-    - keep only one clef if a monophonic instrument has multiple (ex: flute, saxophone, etc.) depending on the prompt.
-    Format:
-    Output ONLY the corrected header text.
-    Do NOT add explanations, comments, markdown formatting, or extra whitespace.
-    If the header is already correct, return it unchanged.
-
-    Task:
-    Return the corrected header if needed. If already correct, return it unchanged.
-
-    Example (Incorrect → Correct):
-
-    Prompt:
-    A peaceful piano and contrabass duet in G major at a slow 72 BPM pace, featuring flowing eighth notes.
-
-    Incorrect Header:
-    %%score {{ ( 1 3 ) | 2 }} 4
-    L:1/8
-    Q:1/4=90
-    M:3/4
-    K:C
-    V:1 treble nm="Piano, Concerto" snm="Pno."
-    V:3 treble
-    V:2 bass
-    V:4 treble nm="Cello" snm="Cello"
-
-    Correct Output:
-    %%score {{ ( 1 3 ) | 2 }} 4
-    L:1/8
-    Q:1/4=72
-    M:4/4
-    K:G
-    V:1 treble nm="Piano" snm="Pno."
-    V:3 treble
-    V:2 bass
-    V:4 bass nm="Contrabass" snm="Cb."
-
-    Now validate the following:
-
-    Prompt:
-    {user_prompt}
-
-    ABC Header:
-    {abc_header}
-    """.format(user_prompt=prompt, abc_header=abc_lines)
-    client = OpenAI(api_key=api_key)
-    response = client.responses.create(
-        model="gpt-5.1",
-        input=llm_prompt
-    )
-    new_header = response.output_text
-
-    return new_header
 
 def rest_unreduce(abc_lines):
 
@@ -224,17 +154,6 @@ def inference_patch(model,
                                              top_p=TOP_P,
                                              temperature=TEMPERATURE)
             if not tunebody_flag and patchilizer.decode([predicted_patch]).startswith('[r:'):  # start with [r:0/
-                # # LLM verification
-                # if api_key is not None and user_prompt != '':
-                #     byte_list_string = ''.join(byte_list)
-                #     new_header = verify_abc_header(byte_list_string, user_prompt, api_key)
-                #     # Add '\n' at the end of new_header if not exists to avoid concatenation with the tunebody
-                #     new_header = new_header if new_header.endswith('\n') else new_header + '\n'
-                #     if new_header != byte_list_string:
-                #         inference_patch(model, plan, '', new_header, pieces=pieces, output_folder=output_folder, output_filename=output_filename, device=device, api_key=None)
-                #         # Exit out of function completely
-                #         return
-
                 tunebody_flag = True
                 r0_patch = torch.tensor([ord(c) for c in '[r:0/']).unsqueeze(0).to(device)
                 temp_input_patches = torch.concat([input_patches, r0_patch], axis=-1)
@@ -348,112 +267,114 @@ if __name__ == '__main__':
             print("❌ Error: API key is required when user prompt is provided.")
             exit(1)
 
-        prompt = """
-            You are an assistant music composer that creates structured musical plans based on user descriptions. Convert the user’s prompt into a concise, measure-wise musical plan highlighting only measures with significant changes (tempo, time/key signature, instrumentation, dynamics, note density, pitch range), rather than listing every consecutive measure.
-            At the top, specify the total number of measures in the piece (use ~ 30 to 40 if not provided). Specify a genre only if requested or if it is relevant to one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
+        # prompt = """
+        #     You are an assistant music composer that creates structured musical plans based on user descriptions. Convert the user’s prompt into a concise, measure-wise musical plan highlighting only measures with significant changes (tempo, time/key signature, instrumentation, dynamics, note density, pitch range), rather than listing every consecutive measure.
+        #     At the top, specify the total number of measures in the piece (use ~ 30 to 40 if not provided). Specify a genre only if requested or if it is relevant to one of: symphony, classical piano, classical, jazz, pop, rock, metal, folk. Then list all instruments used.
         
-            Describe each selected measure using:
-            Instruments: MuseScore instrument names and/or voice (e.g., Cello -> Violincello, Double Bass -> Contrabass, etc. For multiple voices, specify the voice number if possible: e.g., Violin 1, Violin 2, etc.)
-            Pitch Range: lowest–highest MIDI note number for all instruments combined; use varied ranges per measure but consider the instrument's feasible musical range: e.g., for solo flute, you might specify min and max values within 60–96, while for a string quartet, you might specify values within a wider range of 36–96.
-            Note Density: Low, Moderate, or High based on notes per instrument, including chords. Consider the musical style when determining density. For example, a fast classical piece with many sixteenth notes might be High density, while a slow 3/4 folk piece with mostly quarter notes might be Low density.
-            Tempo: BPM: e.g., 60 BPM for slow, 120 BPM for moderate, 180 BPM for fast; you can also specify tempo changes across measures to reflect the musical structure and mood.
-            Time Signature: e.g., 3/4, 4/4, 6/8; these typically remain constant but can change to reflect musical structure.
-            Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use '0' for C major/A minor, '-1' for one flat, '+1' for one sharp, etc. These typically remain constant but can change to reflect musical structure.
-            Chords: lists of unique MIDI pitches % 12 representing chords (e.g., [0, 2, 6, 7] for single or [9, 2], [2, 6, 8, 9, 11] for double chords). Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. Typically, 1-2 chords per measure is common but can also be None if there are melodies without clear chords or if the music is monophonic. 
-            Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
+        #     Describe each selected measure using:
+        #     Instruments: MuseScore instrument names and/or voice (e.g., Cello -> Violincello, Double Bass -> Contrabass, etc. For multiple voices, specify the voice number if possible: e.g., Violin 1, Violin 2, etc.)
+        #     Pitch Range: lowest–highest MIDI note number for all instruments combined; use varied ranges per measure but consider the instrument's feasible musical range: e.g., for solo flute, you might specify min and max values within 60–96, while for a string quartet, you might specify values within a wider range of 36–96.
+        #     Note Density: Low, Moderate, or High based on notes per instrument, including chords. Consider the musical style when determining density. For example, a fast classical piece with many sixteenth notes might be High density, while a slow 3/4 folk piece with mostly quarter notes might be Low density.
+        #     Tempo: BPM: e.g., 60 BPM for slow, 120 BPM for moderate, 180 BPM for fast; you can also specify tempo changes across measures to reflect the musical structure and mood.
+        #     Time Signature: e.g., 3/4, 4/4, 6/8; these typically remain constant but can change to reflect musical structure.
+        #     Key Signature: number of sharps/flats (e.g., -5, 2); do not include mode. Use '0' for C major/A minor, '-1' for one flat, '+1' for one sharp, etc. These typically remain constant but can change to reflect musical structure.
+        #     Chords: lists of unique MIDI pitches % 12 representing chords (e.g., [0, 2, 6, 7] for single or [9, 2], [2, 6, 8, 9, 11] for double chords). Use None if no chords are present or if music is expected to be monophonic depending on solo instrument. You may use the these to steer the musical mode (major / minor). Use highly diverse and variable-length elements. Typically, 1-2 chords per measure is common but can also be None if there are melodies without clear chords or if the music is monophonic. 
+        #     Dynamics (Optional: typically for classical piano): e.g., pp, p, mf, f, ff, crescendo, diminuendo.
         
-            You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
+        #     You are allowed to change these musical attributes in the plan as needed to reflect the musical mood, instrumentation, style and musical structure.
         
-            You may generate around 10 structurally important measures with their measure numbers. The measures do not need to be consecutive always but they could be depending on the scope of the user’s description. However, the measure numbers should be lesser than equal to the total measures asked for at the top of the plan.
+        #     You may generate around 10 structurally important measures with their measure numbers. The measures do not need to be consecutive always but they could be depending on the scope of the user’s description. However, the measure numbers should be lesser than equal to the total measures asked for at the top of the plan.
         
-            Global format (at the top of the plan. Always remember to include total measures and instruments. Genre is optional if it matches the available genres.):
-            Total Measures: <number>
-            Genre: <string> (only if requested or valid)
-            Instruments: <list>
+        #     Global format (at the top of the plan. Always remember to include total measures and instruments. Genre is optional if it matches the available genres.):
+        #     Total Measures: <number>
+        #     Genre: <string> (only if requested or valid)
+        #     Instruments: <list>
         
-            Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
+        #     Measure format (each attribute on a new line exactly as shown; add an empty line before each measure; no extra commentary):
         
-            Use the following format for each measure (Do not add additional commentary other than the format specified):
-            Measure: <number>
-            Instruments: <list>
-            Pitch Range: <min>–<max>
-            Note Density: <Low|Moderate|High>
-            Tempo: <int> BPM
-            Time Signature: <string>
-            Key Signature: <int>
-            Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ... or None
+        #     Use the following format for each measure (Do not add additional commentary other than the format specified):
+        #     Measure: <number>
+        #     Instruments: <list>
+        #     Pitch Range: <min>–<max>
+        #     Note Density: <Low|Moderate|High>
+        #     Tempo: <int> BPM
+        #     Time Signature: <string>
+        #     Key Signature: <int>
+        #     Chords: [<midi pitch number % 12>, ...], [<midi pitch number % 12>, <midi pitch number % 12>, ...], ... or None
         
-            Example 1 (prompt: "Short eerie symphonic music in 4/4 time signature with a moderate tempo"):
+        #     Example 1 (prompt: "Short eerie symphonic music in 4/4 time signature with a moderate tempo"):
         
-            Total Measures: 29
+        #     Total Measures: 29
         
-            Genre: symphony
+        #     Genre: symphony
         
-            Instruments: Trombone, Timpani, Cymbal, Maracas, Saw Synthesizer, Pan Flute, Violins
+        #     Instruments: Trombone, Timpani, Cymbal, Maracas, Saw Synthesizer, Pan Flute, Violins
         
-            Measure: 1
-            Instruments: Violins, Saw Synthesizer
-            Pitch Range: 43–66
-            Note Density: Low
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0, 2, 6, 7]
+        #     Measure: 1
+        #     Instruments: Violins, Saw Synthesizer
+        #     Pitch Range: 43–66
+        #     Note Density: Low
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0, 2, 6, 7]
         
-            Measure: 2
-            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
-            Pitch Range: 24–67
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0, 3, 7], [0], [0, 3, 7], [0]
+        #     Measure: 2
+        #     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+        #     Pitch Range: 24–67
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0, 3, 7], [0], [0, 3, 7], [0]
         
-            Measure: 14
-            Instruments: Violins, Saw Synthesizer, Timpani
-            Pitch Range: 24–84
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0], [0], [0], [0]
+        #     Measure: 14
+        #     Instruments: Violins, Saw Synthesizer, Timpani
+        #     Pitch Range: 24–84
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0], [0], [0], [0]
         
-            Measure: 15
-            Instruments: Violins, Saw Synthesizer, Timpani
-            Pitch Range: 24–84
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0], [0], [0], [0]
+        #     Measure: 15
+        #     Instruments: Violins, Saw Synthesizer, Timpani
+        #     Pitch Range: 24–84
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0], [0], [0], [0]
         
-            Measure: 16
-            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
-            Pitch Range: 24–67
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0, 3, 7], [0], [0, 3, 7], [0]
+        #     Measure: 16
+        #     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+        #     Pitch Range: 24–67
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0, 3, 7], [0], [0, 3, 7], [0]
         
-            Measure: 17
-            Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
-            Pitch Range: 24–66
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0, 2, 6], [0], [0, 2, 6], [0, 3]
+        #     Measure: 17
+        #     Instruments: Violins, Pan Flute, Trombone, Saw Synthesizer
+        #     Pitch Range: 24–66
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0, 2, 6], [0], [0, 2, 6], [0, 3]
         
-            Measure: 28
-            Instruments: Violins, Saw Synthesizer, Timpani
-            Pitch Range: 24–84
-            Note Density: Moderate
-            Tempo: 124 BPM
-            Time Signature: 4/4
-            Chords: [0], [0], [0], [0]
+        #     Measure: 28
+        #     Instruments: Violins, Saw Synthesizer, Timpani
+        #     Pitch Range: 24–84
+        #     Note Density: Moderate
+        #     Tempo: 124 BPM
+        #     Time Signature: 4/4
+        #     Chords: [0], [0], [0], [0]
         
-            Now, here's the user's prompt:
+        #     Now, here's the user's prompt:
         
-            User:
-            {user_prompt}
+        #     User:
+        #     {user_prompt}
         
-            Assistant:
-            """.format(user_prompt=args.user_prompt)
+        #     Assistant:
+        #     """.format(user_prompt=args.user_prompt)
+
+        prompt = get_llm_prompt(args.user_prompt)
         client = OpenAI(api_key=args.api_key)
         response = client.responses.create(
             model="gpt-5.1",

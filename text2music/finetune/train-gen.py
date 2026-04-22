@@ -16,7 +16,7 @@ from tqdm import tqdm
 from copy import deepcopy
 from torch.amp import autocast, GradScaler
 from torch.utils.data import Dataset, DataLoader
-from transformers import GPT2Config, get_scheduler, get_constant_schedule_with_warmup
+from transformers import GPT2Config, get_scheduler, get_cosine_schedule_with_warmup
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -63,11 +63,6 @@ char_config = GPT2Config(num_hidden_layers=CHAR_NUM_LAYERS,
 model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=char_config)
 # print parameter number of model
 print("Custom Model Parameter Number: "+str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
-
-scaler = GradScaler()
-is_autocast = True
-optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
 
 def clear_unused_tensors():
     gc.disable()  # Temporarily disable garbage collection
@@ -325,10 +320,12 @@ if __name__ == "__main__":
     train_set = DataLoader(train_set, batch_size=batch_size, collate_fn=collate_batch, sampler=train_sampler, shuffle = (train_sampler is None))
     eval_set = DataLoader(eval_set, batch_size=batch_size, collate_fn=collate_batch, sampler=eval_sampler, shuffle = (train_sampler is None))
 
-    lr_scheduler = get_constant_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=1000)
-
     model = model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    
+    total_training_steps = NUM_EPOCHS * len(train_set) // ACCUMULATION_STEPS
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.95), weight_decay=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), betas=(0.9, 0.95), lr=LEARNING_RATE)
+    lr_scheduler = get_cosine_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=1000, num_training_steps=total_training_steps)
 
     pre_epoch = 0
     best_epoch = 0
