@@ -17,6 +17,8 @@ dependencies = [
     "transformers",
     "accelerate",
     "wandb",
+    "abctoolkit==0.0.6",
+    "openai",
     "samplings==0.1.7",
     "pyparsing==3.2.1",
     "gradio",

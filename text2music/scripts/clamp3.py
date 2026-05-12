@@ -11,8 +11,8 @@ for item in data:
     item_id = item["id"]
     prompts[item_id] = item_prompt
 
-in_directory = "/gpfs/scratch/acw769/text2score/text2score_v3/"
-out_directory = "/gpfs/scratch/acw769/text2score/text2score_v3_clamp/"
+in_directory = "/gpfs/scratch/acw769/text2score/midilm_new/"
+out_directory = "/gpfs/scratch/acw769/text2score/midilm_new_clamp/"
 
 # Get all mid files in the input directory recursively
 mid_files = []

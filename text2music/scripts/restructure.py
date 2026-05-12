@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 # Set the root directory for your baseline
-root_dir = '/gpfs/scratch/acw769/text2score/midilm_outputs_modified'  # Update this to your actual path
+root_dir = '/gpfs/scratch/acw769/text2score/midillm_outputs_2'  # Update this to your actual path
 
 # Iterate through each subdirectory (1, 2, 3, etc.)
 subdirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]

@@ -9,8 +9,8 @@ if __name__ == "__main__":
     # Define args
     parser = argparse.ArgumentParser()
     parser.add_argument('--api_key', type=str, required=False, help='OpenAI API key for verifying the header')
-    parser.add_argument('--input_json', type=str, default="/data/home/acw769/text2score/text2music/artifacts/evaluation/prompts_with_ids.json", help='Path to the json file containing the prompt information')
-    parser.add_argument('--output_json', type=str, default="/data/home/acw769/text2score/text2music/artifacts/evaluation/prompts_with_plan_v2.json", help='Path to the json file to save the prompt information with plans')
+    parser.add_argument('--input_json', type=str, default="/data/home/acw769/text2score/text2music/artifacts/prompts/prompts_with_ids.json", help='Path to the json file containing the prompt information')
+    parser.add_argument('--output_json', type=str, default="/data/home/acw769/text2score/text2music/artifacts/prompts/prompts_with_plan.json", help='Path to the json file to save the prompt information with plans')
     args = parser.parse_args()
 
     client = OpenAI(api_key=args.api_key)
