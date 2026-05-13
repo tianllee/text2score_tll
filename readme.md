@@ -18,18 +18,24 @@ For a high-level view of the model architecture and pipeline, please see the sys
 
 ## Installation
 
-**1. Create and activate a new Conda environment**
+**1. Clone the repository**
+```bash
+git clone https://github.com/keshavbhandari/text2score.git
+cd text2score
+```
+
+**2. Create and activate a new Conda environment**
 ```bash
 conda create --name text2score python=3.10
 conda activate text2score
 ```
 
-**2. Install PyTorch with CUDA support**
+**3. Install PyTorch with CUDA support**
 ```bash
 conda install pytorch=2.3.0 pytorch-cuda=11.8 numpy -c pytorch -c nvidia
 ```
 
-**3. Install the project and dependencies**
+**4. Install the project and dependencies**
 Ensure you are in the root directory (where `pyproject.toml` is located) and run:
 ```bash
 pip install -e .
@@ -120,4 +126,18 @@ accelerate launch --num_processes 2 text2music/pretrain/train-gen.py
 **Run Fine-tuning:**
 ```bash
 accelerate launch --num_processes 2 text2music/finetune/train-gen.py
+```
+
+## Citation
+
+If you find this repository useful in your research, please consider citing our work:
+
+```bibtex
+@article{bhandari2025text2score,
+  title     = {Text2Score: Generating Sheet Music from Textual Prompts},
+  author    = {Bhandari, Keshav and Chang, Sungkyun and Roy, Abhinaba and Ronchini, Francesca and Benetos, Emmanouil and Herremans, Dorien and Colton, Simon},
+  journal   = {arXiv preprint},
+  year      = {2025},
+  note      = {arXiv link coming soon}
+}
 ```
