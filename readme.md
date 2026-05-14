@@ -4,7 +4,7 @@ GitHub repo for Text2Score: Generating Sheet Music From Textual Prompts
 
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://keshavbhandari.github.io/portfolio/text2score)
 [![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-yellow)](https://huggingface.co/datasets/emotionwave-company/text2score)
-[![Paper](https://img.shields.io/badge/Paper-Arxiv_TBD-red)](#)
+[![Paper](https://img.shields.io/badge/Paper-Arxiv_TBD-red)](https://arxiv.org/abs/2605.13431)
 [![Model Weights](https://img.shields.io/badge/Model-HuggingFace-orange)](https://huggingface.co/keshavbhandari/Text2Score)
 
 **Note on Model Weights:** The pre-trained model checkpoint is hosted on [Hugging Face](https://huggingface.co/keshavbhandari/Text2Score). You do not need to download this manually; the inference scripts are configured to automatically download the weights the first time you run them.
@@ -136,8 +136,8 @@ If you find this repository useful in your research, please consider citing our 
 @article{bhandari2025text2score,
   title     = {Text2Score: Generating Sheet Music from Textual Prompts},
   author    = {Bhandari, Keshav and Chang, Sungkyun and Roy, Abhinaba and Ronchini, Francesca and Benetos, Emmanouil and Herremans, Dorien and Colton, Simon},
-  journal   = {arXiv preprint},
-  year      = {2025},
-  note      = {arXiv link coming soon}
+  journal   = {arXiv preprint arXiv:2605.13431},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2605.13431}
 }
 ```
