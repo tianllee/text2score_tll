@@ -3,9 +3,9 @@ import urllib.request
 
 # --- Weights Download Logic ---
 WEIGHTS_DIR = './text2music/artifacts'
-WEIGHTS_FILENAME = 'weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth'
+WEIGHTS_FILENAME = 'weights_text2score_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth'
 INFERENCE_WEIGHTS_PATH = os.path.join(WEIGHTS_DIR, WEIGHTS_FILENAME)
-WEIGHTS_URL = "https://huggingface.co/keshavbhandari/Text2Score/resolve/main/weights_notagen_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth?download=true"
+WEIGHTS_URL = "https://huggingface.co/keshavbhandari/Text2Score/resolve/main/weights_text2score_finetune_p_size_16_p_length_2048_p_layers_20_c_layers_6_h_size_768_lr_0.0001_batch_16.pth?download=true"
 
 def ensure_weights_exist():
     """Checks if the model weights exist locally, and downloads them if they don't."""
