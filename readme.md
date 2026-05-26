@@ -4,10 +4,10 @@ GitHub repo for Text2Score: Generating Sheet Music From Textual Prompts
 
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://keshavbhandari.github.io/portfolio/text2score)
 [![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-yellow)](https://huggingface.co/datasets/emotionwave-company/text2score)
-[![Paper](https://img.shields.io/badge/Paper-Arxiv_TBD-red)](https://arxiv.org/abs/2605.13431)
+[![Paper](https://img.shields.io/badge/Paper-Arxiv-red)](https://arxiv.org/abs/2605.13431)
 [![Model Weights](https://img.shields.io/badge/Model-HuggingFace-orange)](https://huggingface.co/keshavbhandari/Text2Score)
 
-**Note on Model Weights:** The pre-trained model checkpoint is hosted on [Hugging Face](https://huggingface.co/keshavbhandari/Text2Score). You do not need to download this manually; the inference scripts are configured to automatically download the weights the first time you run them.
+**Note on Model Weights:** The pre-trained and fine-tuned model checkpoints are hosted on [Hugging Face](https://huggingface.co/keshavbhandari/Text2Score). You do not need to download these manually; the inference scripts are configured to automatically download the weights the first time you run them.
 
 ## System Overview
 For a high-level view of the model architecture and pipeline, please see the system overview below:
@@ -49,7 +49,7 @@ pip install optimum
 All scripts should be executed from within the root `text2score` directory. 
 
 ### 1. Generating Plans from Prompts
-Before running batch inference, you can generate an execution plan based on a JSON of prompts.
+Before running batch inference, you can generate execution plans based on a JSON of prompts.
 ```bash
 python text2music/inference/generate_plan.py \
   --api_key "XXXX" \
@@ -57,7 +57,17 @@ python text2music/inference/generate_plan.py \
   --output_json text2music/artifacts/evaluation/prompts_with_plan.json
 ```
 
-### 2. Single Inference
+**Note:** You will need an active OpenAI API key to run this script as it uses the API to generate the plans. The script currently defaults to using the `GPT-5.1` model for plan generation, but you can easily modify the script to use any other supported model.
+
+### 2. Batch Inference
+Run inference across multiple prompts. Run step 1 to have your prompts and corresponding plans in a JSON file (see `text2music/artifacts/evaluation/prompts/prompts_with_plan.json` for an example of the expected format). Then execute:
+```bash
+accelerate launch --num_processes 1 text2music/inference/run_inference.py \
+  --prompt_path_json text2music/artifacts/evaluation/prompts_with_plan.json \
+  --output_folder ./outputs/
+```
+
+### 3. Single Inference
 To generate a score from a single text prompt:
 ```bash
 python text2music/inference/inference.py \
@@ -65,9 +75,10 @@ python text2music/inference/inference.py \
   --api_key "XXXX" \
   --remove_prior_outputs False
 ```
-**Important:** You will need an active OpenAI API key to run the script this way, as it automatically generates the necessary execution plans on the fly. The script currently defaults to using the `GPT-5.1` model for plan generation, but you can easily modify the script to use any other supported model.
 
-Or if you already have a pre-generated plan text file (see note below), use:
+**Note:** You will need an active OpenAI API key to run the script this way, as it automatically generates the necessary execution plans on the fly. The script currently defaults to using the `GPT-5.1` model for plan generation, but you can easily modify the script to use any other supported model.
+
+Or if you don't want to use the API and already have a pre-generated plan text file (see note below), use:
 ```bash
 python text2music/inference/inference.py \
   --plan_path text2music/artifacts/example_plans/partial_plan.txt \
@@ -75,14 +86,6 @@ python text2music/inference/inference.py \
 ```
 
 *Tip: If you prefer to generate a plan manually, you can copy the system prompt found in `text2score/text2music/inference/prompt.py` (add your own prompt in the placeholder text) and paste it into the interface for ChatGPT, Gemini, or any other LLM of your choice along with your desired music prompt. Simply take the LLM's output, replace the contents of `text2score/text2music/artifacts/example_plans/partial_plan.txt` entirely with that new plan, and run the command above.*
-
-### 3. Batch Inference
-Run inference across multiple prompts using `accelerate`:
-```bash
-accelerate launch --num_processes 1 text2music/inference/run_inference.py \
-  --prompt_path_json text2music/artifacts/evaluation/prompts_with_plan.json \
-  --output_folder ./outputs/
-```
 
 ---
 
@@ -109,7 +112,7 @@ To evaluate the generated objective results against your metadata:
 python text2music/scripts/evaluation.py \
   --root ./outputs/ \
   --metadata text2music/artifacts/evaluation/prompts_with_plan.json \
-  --output_txt text2music/scripts/results_valid/text2score_objective_results.txt
+  --output_txt text2music/scripts/results/text2score_objective_results.txt
 ```
 
 ---

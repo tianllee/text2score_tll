@@ -26,7 +26,6 @@ if __name__ == "__main__":
             prompt = get_llm_prompt(item['prompt'])
         
             plan = client.responses.create(
-                # model="gpt-5.4-mini",
                 model="gpt-5.1",
                 input=prompt
             )
