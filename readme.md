@@ -64,7 +64,7 @@ Run inference across multiple prompts. Run step 1 to have your prompts and corre
 ```bash
 accelerate launch --num_processes 1 text2music/inference/run_inference.py \
   --prompt_path_json text2music/artifacts/evaluation/prompts_with_plan.json \
-  --output_folder ./outputs/
+  --output_folder text2music/artifacts/outputs/
 ```
 
 ### 3. Single Inference
@@ -95,12 +95,12 @@ Once you have generated ABC files, you can batch convert them into standard XML 
 
 **Create XML files:**
 ```bash
-python text2music/data/batch_abci2xml.py --root_folder ./outputs/
+python text2music/data/batch_abci2xml.py --root_folder text2music/artifacts/
 ```
 
 **Create MIDI files:**
 ```bash
-python text2music/data/utils/xml2mid.py --data_dir ./outputs/
+python text2music/data/utils/xml2mid.py --data_dir text2music/artifacts/
 ```
 
 ---
@@ -110,7 +110,7 @@ python text2music/data/utils/xml2mid.py --data_dir ./outputs/
 To evaluate the generated objective results against your metadata:
 ```bash
 python text2music/scripts/evaluation.py \
-  --root ./outputs/ \
+  --root text2music/artifacts/outputs/ \
   --metadata text2music/artifacts/evaluation/prompts_with_plan.json \
   --output_txt text2music/scripts/results/text2score_objective_results.txt
 ```
