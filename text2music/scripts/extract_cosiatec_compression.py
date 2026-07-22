@@ -9,6 +9,7 @@ import os
 import sys
 import subprocess
 import glob
+import math
 
 def run_omnisia(jar_path, midi_path, output_dir):
     os.makedirs(output_dir, exist_ok=True)
@@ -119,11 +120,13 @@ def main():
             print(f"Ratio missing in {folder}")
 
 
-    if not ratios:
+    valid_ratios = [r for r in ratios if not math.isnan(r)]
+
+    if not valid_ratios:
         print("No ratios found")
         return
 
-    avg = sum(ratios) / len(ratios)
+    avg = sum(valid_ratios) / len(valid_ratios)
 
     with open(output_txt, "w") as f:
 
@@ -135,6 +138,7 @@ def main():
         f.write("\n")
         f.write(f"Average compression ratio: {avg}\n")
         f.write(f"Total files: {len(ratios)}\n")
+        f.write(f"Valid files in average: {len(valid_ratios)}\n")
 
     print(f"Average: {avg}")
 

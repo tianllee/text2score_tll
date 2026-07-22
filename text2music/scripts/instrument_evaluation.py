@@ -41,7 +41,7 @@ def llm_instrument_evaluation(client, user_prompt, generated_instruments_list):
     """.format(user_prompt=user_prompt, generated_instruments_list=generated_instruments_list)
 
     completion = client.chat.completions.create(
-        model="qwen/qwen3-32b",
+        model="qwen/qwen3.6-27b",
         messages=[{"role": "user", "content": llm_prompt}],
         temperature=0.6,
         max_completion_tokens=4096,
