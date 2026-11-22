@@ -1,0 +1,238 @@
+[
+ {
+  "id": 101,
+  "prompt": "A gentle piano lullaby in C major, 3/4 time at 72 BPM, soft and slowing to a quiet ending.",
+  "winner": 10103,
+  "candidates": [
+   {
+    "candidate": 10101,
+    "valid": true,
+    "score": 0.8268,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.636,
+     "chord_share": 0.714,
+     "activity": 1,
+     "variety": 0.929
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10101/xml/10101_output.xml"
+   },
+   {
+    "candidate": 10102,
+    "valid": true,
+    "score": 0.8676,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.878,
+     "chord_share": 0.592,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10102/xml/10102_output.xml"
+   },
+   {
+    "candidate": 10103,
+    "valid": true,
+    "score": 0.889,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.9,
+     "chord_share": 0.676,
+     "activity": 1,
+     "variety": 0.967
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10103/xml/10103_output.xml"
+   },
+   {
+    "candidate": 10104,
+    "valid": true,
+    "score": 0.8436,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.854,
+     "chord_share": 0.521,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10104/xml/10104_output.xml"
+   }
+  ]
+ },
+ {
+  "id": 102,
+  "prompt": "A melancholic string quartet in D minor at a slow 66 BPM, starting with low strings and building to an intense climax before fading.",
+  "winner": 10204,
+  "candidates": [
+   {
+    "candidate": 10201,
+    "valid": true,
+    "score": 0.7925,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.719,
+     "chord_share": 0.575,
+     "activity": 1,
+     "variety": 0.794
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10201/xml/10201_output.xml"
+   },
+   {
+    "candidate": 10202,
+    "valid": true,
+    "score": 0.797,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.599,
+     "chord_share": 0.603,
+     "activity": 1,
+     "variety": 0.976
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10202/xml/10202_output.xml"
+   },
+   {
+    "candidate": 10203,
+    "valid": true,
+    "score": 0.7715,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.541,
+     "chord_share": 0.558,
+     "activity": 1,
+     "variety": 0.977
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10203/xml/10203_output.xml"
+   },
+   {
+    "candidate": 10204,
+    "valid": true,
+    "score": 0.888,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.891,
+     "chord_share": 0.675,
+     "activity": 1,
+     "variety": 0.976
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10204/xml/10204_output.xml"
+   }
+  ]
+ },
+ {
+  "id": 103,
+  "prompt": "An upbeat swing jazz trio (piano, bass, drums) in Bb major at 132 BPM, using ii-V-I progressions.",
+  "winner": 10302,
+  "candidates": [
+   {
+    "candidate": 10301,
+    "valid": true,
+    "score": 0.8494,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.831,
+     "chord_share": 0.567,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10301/xml/10301_output.xml"
+   },
+   {
+    "candidate": 10302,
+    "valid": true,
+    "score": 0.9025,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.896,
+     "chord_share": 0.734,
+     "activity": 1,
+     "variety": 0.967
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10302/xml/10302_output.xml"
+   },
+   {
+    "candidate": 10303,
+    "valid": true,
+    "score": 0.856,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.817,
+     "chord_share": 0.637,
+     "activity": 1,
+     "variety": 0.95
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10303/xml/10303_output.xml"
+   },
+   {
+    "candidate": 10304,
+    "valid": true,
+    "score": 0.8788,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.82,
+     "chord_share": 0.705,
+     "activity": 1,
+     "variety": 0.983
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10304/xml/10304_output.xml"
+   }
+  ]
+ },
+ {
+  "id": 104,
+  "prompt": "A lively Irish-style solo violin jig in D major, 6/8 time at 116 BPM.",
+  "winner": 10401,
+  "candidates": [
+   {
+    "candidate": 10401,
+    "valid": true,
+    "score": 0.9303,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.791,
+     "chord_share": null,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10401/xml/10401_output.xml"
+   },
+   {
+    "candidate": 10402,
+    "valid": true,
+    "score": 0.9173,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.752,
+     "chord_share": null,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10402/xml/10402_output.xml"
+   },
+   {
+    "candidate": 10403,
+    "valid": true,
+    "score": 0.846,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.538,
+     "chord_share": null,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10403/xml/10403_output.xml"
+   },
+   {
+    "candidate": 10404,
+    "valid": true,
+    "score": 0.8846,
+    "parts": {
+     "structure": 1,
+     "range_iou": 0.654,
+     "chord_share": null,
+     "activity": 1,
+     "variety": 1.0
+    },
+    "xml": "/Users/tianlonglee/text2score/my_experiments/bon/candidates/10404/xml/10404_output.xml"
+   }
+  ]
+ }
+]

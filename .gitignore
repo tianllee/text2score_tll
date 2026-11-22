@@ -92,3 +92,4 @@ my_experiments/trial_outputs/
 my_experiments/*.log
 text2music/artifacts/output/
 my_experiments/listen/
+my_experiments/bon*/
