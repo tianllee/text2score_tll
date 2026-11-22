@@ -74,6 +74,7 @@ def main():
         valid = [r for r in rows if r["valid"]]
         winner = max(valid, key=lambda r: r["score"]) if valid else None
         report.append(dict(id=it["id"], prompt=it["prompt"], winner=winner and winner["candidate"], candidates=rows))
+        json.dump(report, open(out / "report.json", "w"), indent=1, ensure_ascii=False)  # save progress
 
         print(f"\n=== {it['id']}: {it['prompt'][:80]}")
         for r in rows:
@@ -92,7 +93,12 @@ def main():
             abc = next((cand_dir / str(winner["candidate"]) / "original").glob("*.abc"), None)
             if abc:
                 shutil.copy(abc, f"{stem}.abc")
-            m21.converter.parse(winner["xml"]).write("midi", fp=f"{stem}.mid")
+            try:
+                m21.converter.parse(winner["xml"]).write("midi", fp=f"{stem}.mid")
+            except Exception as e:  # e.g. badly formed repeats; MuseScore is more forgiving
+                print(f"  music21 MIDI export failed ({e}); trying MuseScore", flush=True)
+                if os.path.exists(MSCORE):
+                    subprocess.run([MSCORE, "-o", f"{stem}.mid", winner["xml"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if args.mp3 and os.path.exists(MSCORE):
                 subprocess.run([MSCORE, "-o", f"{stem}.mp3", winner["xml"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

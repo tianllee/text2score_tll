@@ -24,9 +24,9 @@ ensure_weights_exist()
 
 # --- Configurations for inference ---
 NUM_SAMPLES = 1                                              # Number of samples to generate (only for generate mode)
-TOP_K = 9                                                    # Top k for sampling
-TOP_P = 0.9                                                  # Top p for sampling
-TEMPERATURE = 1.2                                            # Temperature for sampling
+TOP_K = int(os.environ.get('T2S_TOP_K', 9))                                                    # Top k for sampling
+TOP_P = float(os.environ.get('T2S_TOP_P', 0.9))                                                  # Top p for sampling
+TEMPERATURE = float(os.environ.get('T2S_TEMPERATURE', 1.2))                                            # Temperature for sampling
 ORIGINAL_OUTPUT_FOLDER = './text2music/artifacts/output/'
 INTERLEAVED_OUTPUT_FOLDER = './text2music/artifacts/output/interleaved'
 XML_OUTPUT_FOLDER = './text2music/artifacts/output/xml'
