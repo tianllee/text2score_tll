@@ -85,3 +85,9 @@ cython_debug/
 # Output folder
 text2music/data/train_new.jsonl
 text2music/data/validation_new.jsonl
+
+# Local experiments: generated outputs and logs
+my_experiments/outputs/
+my_experiments/trial_outputs/
+my_experiments/*.log
+text2music/artifacts/output/

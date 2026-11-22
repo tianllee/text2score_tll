@@ -1,0 +1,67 @@
+
+=== 101: A gentle piano lullaby in C major, 3/4 time at 72 BPM, soft and slowing to a quiet ending.
+  measures: 16 (plan 16)  OK
+  key sig: 0 (plan 0)  time sig: 3/4 (plan 3/4)
+  analyzed key: C major
+  part Piano                     notes=23
+  part Piano                     notes=35
+  m1: range 48-76 (plan 48-76) ok | 100% notes in chord [0, 4, 7]
+  m3: range 50-77 (plan 48-77) ok | 60% notes in chord [0, 5, 9]
+  m5: range 36-79 (plan 45-79) OFF | 67% notes in chord [0, 4, 9]
+  m8: range 48-81 (plan 43-79) ok | 43% notes in chord [2, 5, 7, 11]
+  m9: range 50-77 (plan 48-81) ok | 20% notes in chord [0, 4, 7]
+  m12: range 41-81 (plan 50-77) OFF | 100% notes in chord [0, 2, 5, 9]
+  m14: range 55-76 (plan 43-74) ok | 20% notes in chord [2, 7, 11]
+  m16: range 36-72 (plan 36-72) ok | 100% notes in chord [0, 4, 7]
+  summary: pitch-range ok 6/8, avg chord-tone share 64%, repeated consecutive bars (top part) 0/15
+
+=== 102: A melancholic string quartet in D minor at a slow 66 BPM, starting with low strings and building to an intense climax before fading.
+  measures: 24 (plan 24)  OK
+  key sig: -1 (plan -1)  time sig: 4/4 (plan 4/4)
+  analyzed key: d minor
+  part Violin 1                  notes=86
+  part Violin 2                  notes=93
+  part Viola                     notes=90
+  part Violoncello               notes=59
+  m1: range 38-62 (plan 38-62) ok | 100% notes in chord [2, 5, 9]
+  m3: range 38-62 (plan 38-74) ok | 50% notes in chord [2, 5, 9]
+  m5: range 38-74 (plan 43-77) OFF | 27% notes in chord [2, 7, 10]
+  m8: range 38-69 (plan 40-76) ok | 67% notes in chord [1, 4, 7, 9]
+  m12: range 41-77 (plan 34-81) ok | 53% notes in chord [2, 5, 10]
+  m16: range 46-84 (plan 43-84) ok | 35% notes in chord [2, 4, 7, 10]
+  m20: range 40-73 (plan 40-79) ok | 53% notes in chord [1, 4, 9]
+  m24: range 38-69 (plan 38-69) ok | 50% notes in chord [2, 5, 9]
+  summary: pitch-range ok 7/8, avg chord-tone share 54%, repeated consecutive bars (top part) 0/23
+
+=== 103: An upbeat swing jazz trio (piano, bass, drums) in Bb major at 132 BPM, using ii-V-I progressions.
+  measures: 16 (plan 16)  OK
+  key sig: -2 (plan -2)  time sig: 4/4 (plan 4/4)
+  analyzed key: F major
+  part Piano, Track 4            notes=60
+  part Piano, Track 4            notes=60
+  part Contrabass                notes=59
+  part Drumset                   notes=57
+  m1: range 28-70 (plan 28-72) ok | 43% notes in chord [0, 3, 7, 10]
+  m2: range 27-74 (plan 28-74) ok | 75% notes in chord [0, 3, 5, 9]
+  m3: range 29-77 (plan 34-77) OFF | 88% notes in chord [2, 5, 9, 10]
+  m5: range 31-81 (plan 27-79) ok | 72% notes in chord [2, 3, 7, 10]
+  m8: range 31-81 (plan 31-81) ok | 40% notes in chord [2, 5, 7, 10]
+  m12: range 31-81 (plan 29-77) OFF | 67% notes in chord [0, 3, 5, 9]
+  m15: range 28-73 (plan 28-74) ok | 34% notes in chord [0, 3, 7, 10]
+  m16: range 34-70 (plan 34-70) ok | 100% notes in chord [2, 5, 9, 10]
+  summary: pitch-range ok 6/8, avg chord-tone share 65%, repeated consecutive bars (top part) 0/15
+
+=== 104: A lively Irish-style solo violin jig in D major, 6/8 time at 116 BPM.
+  measures: 16 (plan 16)  OK
+  key sig: 2 (plan 2)  time sig: 6/8 (plan 6/8)
+  analyzed key: D major
+  part Violin                    notes=113
+  m1: range 62-81 (plan 62-81) ok
+  m4: range 81-81 (plan 57-79) ok
+  m5: range 57-79 (plan 64-86) OFF
+  m8: range 74-86 (plan 62-74) OFF
+  m9: range 62-74 (plan 66-88) OFF
+  m12: range 62-81 (plan 62-83) ok
+  m13: range 64-83 (plan 57-81) ok
+  m16: range 62-74 (plan 62-74) ok
+  summary: pitch-range ok 5/8, repeated consecutive bars (top part) 3/15
