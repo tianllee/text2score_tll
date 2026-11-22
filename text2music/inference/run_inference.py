@@ -19,6 +19,8 @@ args = parser.parse_args()
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
 else:
     device = torch.device("cpu")
 
@@ -41,7 +43,7 @@ model = CustomLMHeadModel(encoder_config=patch_config, decoder_config=byte_confi
 
 print("Parameter Number: " + str(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
-checkpoint = torch.load(INFERENCE_WEIGHTS_PATH, map_location=torch.device(device))
+checkpoint = torch.load(INFERENCE_WEIGHTS_PATH, map_location="cpu", weights_only=False)
 model.load_state_dict(checkpoint['model'])
 model = model.to(device)
 model.eval()
